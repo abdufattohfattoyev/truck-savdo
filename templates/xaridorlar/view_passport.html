@@ -1,0 +1,165 @@
+<div class="hujjatlar-container" data-xaridor-id="{{ xaridor.id }}">
+    <h5 class="mb-4">{{ xaridor.ism_familiya }} - Hujjatlar</h5>
+
+    {% if xaridor.hujjatlar.exists %}
+    <div class="row" id="hujjatlar-list">
+        {% for hujjat in xaridor.hujjatlar.all %}
+        <div class="col-12 mb-4 hujjat-item" data-hujjat-id="{{ hujjat.id }}">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h6 class="card-title mb-0">{{ hujjat.original_file_name }}</h6>
+                        <small class="text-muted">{{ hujjat.uploaded_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+
+                    {% with ext=hujjat.original_file_name|lower|slice:'-4:' %}
+                    {% if ext in '.jpg,.jpeg,.png' %}
+                    <div class="text-center mb-3">
+                        <img src="{{ hujjat.hujjat.url }}" alt="{{ hujjat.original_file_name }}"
+                             class="img-fluid rounded" style="max-height: 200px; max-width: 100%;">
+                    </div>
+                    {% else %}
+                    <div class="text-center mb-3">
+                        <i class="bi bi-file-earmark-text display-4 text-muted"></i>
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ hujjat.hujjat.url }}" download="{{ hujjat.original_file_name }}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download me-2"></i>Yuklab olish
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger delete-hujjat-btn"
+                                data-hujjat-id="{{ hujjat.id }}"
+                                onclick="deleteHujjat({{ hujjat.id }})">
+                            <i class="bi bi-trash me-2"></i>O'chirish
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info" id="hujjatlar-list">
+        <i class="bi bi-info-circle me-2"></i>Hujjatlar topilmadi
+    </div>
+    {% endif %}
+
+    <div class="text-end mt-3">
+        <button type="button" class="btn btn-secondary" onclick="window.closeDetailSidebar()">
+            <i class="bi bi-x-lg me-2"></i>Yopish
+        </button>
+    </div>
+</div>
+
+<script>
+function deleteHujjat(hujjatId) {
+    if (confirm("Hujjatni o'chirishni tasdiqlaysizmi?")) {
+        fetch(`/xaridorlar/hujjat/delete/${hujjatId}/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.showAlert('success', data.message);
+                const xaridorId = document.querySelector('.hujjatlar-container').getAttribute('data-xaridor-id');
+                // Sidebar contentni yangilash
+                window.openDetailSidebar(`/xaridorlar/passport/${xaridorId}/`, document.getElementById('detailSidebarTitle').textContent);
+                // Asosiy sahifadagi yacheykani yangilash
+                updateHujjatCell(xaridorId);
+            } else {
+                window.showAlert('error', data.message || "Hujjatni o'chirishda xatolik yuz berdi!");
+            }
+        })
+        .catch(error => {
+            console.error('Xatolik:', error);
+            window.showAlert('error', "Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.");
+        });
+    }
+}
+
+// Sidebar uchun xaridor ID ni saqlash
+document.addEventListener('DOMContentLoaded', function() {
+    const detailSidebar = document.getElementById('detailSidebar');
+    const xaridorId = document.querySelector('.hujjatlar-container').getAttribute('data-xaridor-id');
+    detailSidebar.dataset.xaridorId = xaridorId;
+});
+
+// updateHujjatCell funksiyasini global qilish
+window.updateHujjatCell = function(xaridorId) {
+    fetch(`/xaridorlar/passport/${xaridorId}/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const cell = document.querySelector(`td[data-xaridor-id="${xaridorId}"]`);
+        if (cell) {
+            cell.innerHTML = data.html.includes('hujjatlar-list') && data.html.includes('hujjat-item')
+                ? `<button class="btn btn-sm btn-info detail-open-btn" data-url="/xaridorlar/passport/${xaridorId}/" data-title="Hujjatlar">
+                    <i class="bi bi-eye"></i> Ko'rish
+                   </button>
+                   <button class="btn btn-sm btn-primary mt-1 toggle-hujjat-btn" data-xaridor-id="${xaridorId}">Hujjat Qo'shish</button>`
+                : `Hujjat yo'q
+                   <button class="btn btn-sm btn-primary mt-1 toggle-hujjat-btn" data-xaridor-id="${xaridorId}">Hujjat Qo'shish</button>`;
+        }
+    })
+    .catch(error => {
+        console.error('Xatolik:', error);
+        window.showAlert('error', 'Hujjatlar yacheykasini yangilashda xatolik yuz berdi.');
+    });
+};
+</script>
+
+<style>
+.hujjatlar-container {
+    padding: 20px;
+}
+.card {
+    box-shadow: var(--shadow);
+    border-radius: var(--border-radius);
+}
+.card-title {
+    font-size: 1rem;
+    font-weight: 500;
+}
+.text-muted {
+    font-size: 0.85rem;
+}
+.btn-sm {
+    font-size: 0.85rem;
+}
+.alert-info {
+    font-size: 0.9rem;
+    padding: 10px;
+}
+@media (max-width: 576px) {
+    .hujjatlar-container {
+        padding: 15px;
+    }
+    .card-title {
+        font-size: 0.9rem;
+    }
+    .text-muted {
+        font-size: 0.75rem;
+    }
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .alert-info {
+        font-size: 0.85rem;
+        padding: 8px;
+    }
+    img.img-fluid {
+        max-height: 150px;
+    }
+}
+</style>

@@ -1,0 +1,619 @@
+{% extends 'base.html' %}
+
+{% block title %}Xaridorlar Ro'yxati{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Asosiy stil */
+    .card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    /* Jadval stillari */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        width: 100%;
+        margin-bottom: 1rem;
+        color: #212529;
+        border-collapse: collapse;
+    }
+
+    .table th {
+        background-color: #343a40;
+        color: white;
+        vertical-align: middle;
+        padding: 12px 8px;
+        font-weight: 500;
+    }
+
+    .table td {
+        vertical-align: middle;
+        padding: 10px 8px;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+
+    /* Mobil ko'rinish uchun maxsus stil */
+    @media (max-width: 767.98px) {
+        .table thead {
+            display: none;
+        }
+
+        .table, .table tbody, .table tr, .table td {
+            display: block;
+            width: 100%;
+        }
+
+        .table tr {
+            margin-bottom: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            position: relative;
+        }
+
+        .table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: right;
+        }
+
+        .table td:before {
+            content: attr(data-label);
+            font-weight: bold;
+            flex: 1;
+            padding-right: 10px;
+            text-align: left;
+        }
+
+        .table td:last-child {
+            border-bottom: 0;
+        }
+
+        /* Hujjatlar bo'limi mobil ko'rinishi */
+        .hujjatlar-section td {
+            padding: 0;
+        }
+
+        .hujjat-card {
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        /* Amallar tugmalari mobil ko'rinishi */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end;
+        }
+
+        .action-buttons .btn {
+            padding: 5px 8px;
+            font-size: 12px;
+        }
+
+        /* Hujjat qo'shish bo'limi mobil ko'rinishi */
+        .hujjat-input-group {
+            margin-bottom: 10px;
+        }
+
+        .hujjat-input-group .input-group {
+            flex-direction: column;
+        }
+
+        .hujjat-input-group .input-group .form-control {
+            margin-bottom: 5px;
+            width: 100%;
+        }
+
+        .hujjat-input-group .input-group .btn {
+            flex: 1;
+            margin-bottom: 5px;
+            width: 100%;
+        }
+    }
+
+    /* Tugmalar */
+    .btn {
+        font-size: 0.85rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .btn-accent {
+        background-color: #4e73df;
+        color: white;
+        border: none;
+    }
+
+    .btn-accent:hover {
+        background-color: #3a5ccc;
+        color: white;
+    }
+
+    /* Form elementlari */
+    .form-control {
+        font-size: 0.9rem;
+        border-radius: 4px;
+        padding: 0.375rem 0.75rem;
+        border: 1px solid #ced4da;
+    }
+
+    /* Hujjatlar bo'limi */
+    .hujjatlar-section {
+        display: none;
+    }
+
+    .hujjatlar-section.active {
+        display: table-row;
+    }
+
+    .hujjat-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+
+    /* Yuklash animatsiyasi */
+    .spinner-border {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    /* Alert xabarlari */
+    .custom-alert {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 400px;
+        width: calc(100% - 40px);
+    }
+
+    /* Mobil uchun maxsus sozlashlar */
+    @media (max-width: 575.98px) {
+        .d-flex.flex-column.flex-md-row {
+            flex-direction: column !important;
+        }
+
+        .mb-3.mb-md-0 {
+            margin-bottom: 1rem !important;
+        }
+
+        .input-group {
+            flex-wrap: wrap;
+        }
+
+        .input-group .form-control {
+            margin-bottom: 5px;
+        }
+
+        .input-group .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="card">
+        <div class="card-body">
+            <!-- Sarlavha va qo'shish tugmasi -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+                <h2 class="mb-3 mb-md-0">
+                    <i class="bi bi-people-fill text-primary me-2"></i>
+                    Xaridorlar Ro'yxati
+                </h2>
+                <button class="btn btn-accent form-open-btn" data-url="{% url 'xaridor_add' %}" data-title="Yangi Xaridor Qo'shish">
+                    <i class="bi bi-plus-circle me-1"></i> Yangi Xaridor
+                </button>
+            </div>
+
+            <!-- Qidiruv va filtr formlari -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <form method="GET" class="input-group">
+                        <input type="text" name="q" class="form-control" placeholder="Ism, familiya yoki telefon..." value="{{ query|default:'' }}">
+                        <button type="submit" class="btn btn-accent">
+                            <i class="bi bi-search"></i> Qidirish
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <form method="GET" class="input-group">
+                        <input type="date" name="sana" class="form-control" value="{{ sana|default:'' }}">
+                        <button type="submit" class="btn btn-accent">
+                            <i class="bi bi-calendar"></i> Filtrlash
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Jadval -->
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Ism Familiya</th>
+                            <th>Telefon</th>
+                            <th>Hujjatlar</th>
+                            <th>Balans</th>
+                            <th>Sana</th>
+                            {% if is_superuser %}<th>Foydalanuvchi</th>{% endif %}
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for xaridor in page_obj %}
+                        <tr>
+                            <td data-label="#">{{ forloop.counter|add:page_obj.start_index|add:-1 }}</td>
+                            <td data-label="Ism Familiya">{{ xaridor.ism_familiya }}</td>
+                            <td data-label="Telefon">{{ xaridor.telefon_raqam|default:"-" }}</td>
+                            <td data-label="Hujjatlar" data-xaridor-id="{{ xaridor.id }}">
+                                <div class="d-flex flex-column">
+                                    {% if xaridor.hujjatlar.exists %}
+                                    <button class="btn btn-sm btn-info detail-open-btn mb-1" data-url="{% url 'view_passport' xaridor.id %}" data-title="{{ xaridor.ism_familiya }} - Hujjatlar">
+                                        <i class="bi bi-eye"></i> Ko'rish
+                                    </button>
+                                    {% else %}
+                                    <span class="text-muted mb-1">Hujjat yo'q</span>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-primary toggle-hujjat-btn" data-xaridor-id="{{ xaridor.id }}">
+                                        <i class="bi bi-file-earmark-plus"></i> Qo'shish
+                                    </button>
+                                </div>
+                            </td>
+                            <td data-label="Balans">{{ xaridor.hozirgi_balans|floatformat:2 }} so'm</td>
+                            <td data-label="Sana">{{ xaridor.sana|date:"d.m.Y" }}</td>
+                            {% if is_superuser %}
+                            <td data-label="Foydalanuvchi">{{ xaridor.user.username }}</td>
+                            {% endif %}
+                            <td data-label="Amallar">
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-warning form-open-btn" data-url="{% url 'edit_xaridor' xaridor.id %}" data-title="Xaridorni Tahrirlash">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger form-open-btn" data-url="{% url 'xaridor_delete' xaridor.id %}" data-title="Xaridorni O'chirish">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="hujjatlar-section" id="hujjatlar-section-{{ xaridor.id }}">
+                            <td colspan="{% if is_superuser %}8{% else %}7{% endif %}">
+                                <div class="hujjat-card">
+                                    <h5 class="mb-3">
+                                        <i class="bi bi-file-earmark-text me-2"></i>
+                                        {{ xaridor.ism_familiya }} uchun hujjatlar
+                                    </h5>
+
+                                    <div id="hujjat-inputs-{{ xaridor.id }}">
+                                        <div class="mb-3 hujjat-input-group" id="hujjat-group-{{ xaridor.id }}-1">
+                                            <label for="hujjat-{{ xaridor.id }}-1" class="form-label">Hujjat fayli</label>
+                                            <div class="input-group">
+                                                <input type="file" name="hujjat" class="form-control hujjat-input" id="hujjat-{{ xaridor.id }}-1" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                                                <button type="button" class="btn btn-primary upload-hujjat-btn" data-input-id="hujjat-{{ xaridor.id }}-1" data-xaridor-id="{{ xaridor.id }}">
+                                                    <i class="bi bi-upload me-1"></i> Yuklash
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger remove-hujjat-btn" onclick="removeHujjatInput('hujjat-group-{{ xaridor.id }}-1')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Qo'llaniladigan formatlar: JPG, PNG, PDF, DOC, DOCX (maks. 10MB)</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap justify-content-between gap-2 mt-3">
+                                        <button type="button" class="btn btn-secondary add-hujjat-btn" data-xaridor-id="{{ xaridor.id }}">
+                                            <i class="bi bi-plus-circle me-1"></i> Qo'shimcha hujjat
+                                        </button>
+                                        <button type="button" class="btn btn-success yakunlash-btn" data-xaridor-id="{{ xaridor.id }}">
+                                            <i class="bi bi-check-circle me-1"></i> Yakunlash
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if is_superuser %}8{% else %}7{% endif %}" class="text-center py-4">
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Xaridorlar topilmadi.
+                                    {% if query or sana %}
+                                    <a href="?" class="alert-link">Filtrlarni tozalash</a>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-link form-open-btn p-0" data-url="{% url 'xaridor_add' %}" data-title="Yangi Xaridor Qo'shish">
+                                        Yangi xaridor qo'shish
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if sana %}&sana={{ sana }}{% endif %}" aria-label="Oldingi">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if sana %}&sana={{ sana }}{% endif %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if sana %}&sana={{ sana }}{% endif %}" aria-label="Keyingi">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Avval barcha hujjatlar bo'limlarini yopish
+    document.querySelectorAll('.hujjatlar-section').forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // Hujjatlar bo'limini ko'rsatish/yashirish
+    document.querySelectorAll('.toggle-hujjat-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const xaridorId = this.getAttribute('data-xaridor-id');
+            const section = document.getElementById(`hujjatlar-section-${xaridorId}`);
+
+            // Agar bo'lim allaqachon ochiq bo'lsa, yopish
+            if (section.classList.contains('active')) {
+                section.classList.remove('active');
+                return;
+            }
+
+            // Barcha boshqa hujjatlar bo'limlarini yopish
+            document.querySelectorAll('.hujjatlar-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+
+            // Faqat tanlangan bo'limni ochish
+            section.classList.add('active');
+
+            // Agar bo'lim ochiq bo'lsa, unga scroll qilish
+            if (section.classList.contains('active')) {
+                setTimeout(() => {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
+        });
+    });
+
+    // Yangi hujjat inputi qo'shish
+    document.querySelectorAll('.add-hujjat-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const xaridorId = this.getAttribute('data-xaridor-id');
+            const container = document.getElementById(`hujjat-inputs-${xaridorId}`);
+            const count = container.querySelectorAll('.hujjat-input-group').length + 1;
+
+            const newInputGroup = document.createElement('div');
+            newInputGroup.className = 'mb-3 hujjat-input-group';
+            newInputGroup.id = `hujjat-group-${xaridorId}-${count}`;
+            newInputGroup.innerHTML = `
+                <label for="hujjat-${xaridorId}-${count}" class="form-label">Hujjat fayli</label>
+                <div class="input-group">
+                    <input type="file" name="hujjat" class="form-control hujjat-input" id="hujjat-${xaridorId}-${count}" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                    <button type="button" class="btn btn-primary upload-hujjat-btn" data-input-id="hujjat-${xaridorId}-${count}" data-xaridor-id="${xaridorId}">
+                        <i class="bi bi-upload me-1"></i> Yuklash
+                    </button>
+                    <button type="button" class="btn btn-outline-danger remove-hujjat-btn" onclick="removeHujjatInput('hujjat-group-${xaridorId}-${count}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <small class="text-muted">Qo'llaniladigan formatlar: JPG, PNG, PDF, DOC, DOCX (maks. 10MB)</small>
+            `;
+
+            container.appendChild(newInputGroup);
+            bindUploadEvents();
+
+            // Yangi inputga fokus qilish
+            setTimeout(() => {
+                const input = document.getElementById(`hujjat-${xaridorId}-${count}`);
+                if (input) input.focus();
+            }, 100);
+        });
+    });
+
+    // Hujjat inputini o'chirish
+    window.removeHujjatInput = function(groupId) {
+        const group = document.getElementById(groupId);
+        if (group && document.querySelectorAll('.hujjat-input-group').length > 1) {
+            group.remove();
+        } else if (group) {
+            showAlert('warning', "Kamida bitta hujjat maydoni bo'lishi shart!");
+        }
+    }
+
+    // Fayl yuklash
+    function bindUploadEvents() {
+        document.querySelectorAll('.hujjat-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const file = this.files[0];
+                if (!file) return;
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                const validExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
+                const sizeMB = file.size / (1024 * 1024);
+
+                if (!validExtensions.includes(ext)) {
+                    showAlert('error', `Noto'g'ri fayl formati: ${file.name}\nFaqat ${validExtensions.join(', ')} formatlari qo'llab-quvvatlanadi.`);
+                    this.value = '';
+                    return;
+                }
+
+                if (sizeMB > 10) {
+                    showAlert('error', `Fayl hajmi 10MB dan katta: ${file.name}\nHajmi: ${sizeMB.toFixed(2)}MB`);
+                    this.value = '';
+                    return;
+                }
+            });
+        });
+
+        document.querySelectorAll('.upload-hujjat-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const inputId = this.getAttribute('data-input-id');
+                const xaridorId = this.getAttribute('data-xaridor-id');
+                const input = document.getElementById(inputId);
+
+                if (!input.files || !input.files[0]) {
+                    showAlert('error', 'Iltimos, avval fayl tanlang!');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('hujjat', input.files[0]);
+                formData.append('xaridor_id', xaridorId);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+                // Yuklash animatsiyasi
+                const originalText = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Yuklanmoqda...';
+                this.disabled = true;
+
+                fetch('{% url "upload_hujjat" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                        input.value = '';
+
+                        // Hujjatlar yacheykasini yangilash
+                        const cell = document.querySelector(`td[data-xaridor-id="${xaridorId}"]`);
+                        if (cell) {
+                            cell.innerHTML = `
+                                <div class="d-flex flex-column">
+                                    <button class="btn btn-sm btn-info detail-open-btn mb-1" data-url="/xaridorlar/passport/${xaridorId}/" data-title="Hujjatlar">
+                                        <i class="bi bi-eye"></i> Ko'rish
+                                    </button>
+                                    <button class="btn btn-sm btn-primary toggle-hujjat-btn" data-xaridor-id="${xaridorId}">
+                                        <i class="bi bi-file-earmark-plus"></i> Qo'shish
+                                    </button>
+                                </div>
+                            `;
+
+                            // Yangi toggle tugmasiga hodisa qo'shish
+                            cell.querySelector('.toggle-hujjat-btn').addEventListener('click', function() {
+                                const section = document.getElementById(`hujjatlar-section-${xaridorId}`);
+                                section.classList.toggle('active');
+                            });
+                        }
+                    } else {
+                        showAlert('error', data.message || 'Hujjat yuklashda xatolik yuz berdi!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Xatolik:', error);
+                    showAlert('error', 'Server bilan aloqa xatolik yuz berdi');
+                })
+                .finally(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                });
+            });
+        });
+    }
+
+    // Yakunlash tugmasi
+    document.querySelectorAll('.yakunlash-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const xaridorId = this.getAttribute('data-xaridor-id');
+            const section = document.getElementById(`hujjatlar-section-${xaridorId}`);
+            section.classList.remove('active');
+            showAlert('success', 'Hujjat qo\'shish jarayoni yakunlandi!');
+        });
+    });
+
+    // Dastlabki hodisalarni bog'lash
+    bindUploadEvents();
+
+    // Alert funksiyasi
+    function showAlert(type, message) {
+        // Avvalgi alertlarni o'chirish
+        document.querySelectorAll('.custom-alert').forEach(el => el.remove());
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `custom-alert alert alert-${type} alert-dismissible fade show`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.maxWidth = '400px';
+        alertDiv.style.width = 'calc(100% - 40px)';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        document.body.appendChild(alertDiv);
+
+        // 5 soniyadan keyin avtomatik yopilishi
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 150);
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

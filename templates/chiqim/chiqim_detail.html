@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% block title %}Expense Details - Truck Sales{% endblock %}
+{% block content %}
+<div class="container-xl">
+    <div class="page-header">
+        <h1 class="page-title">Expense Details</h1>
+        <a href="{% url 'chiqim_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+    <div class="card-grid">
+        <div class="card"><h3>Vehicle</h3><p class="value">{{ chiqim.truck.make }} {{ chiqim.truck.model|default:"N/A" }}</p></div>
+        <div class="card"><h3>Customer</h3><p class="value">{{ chiqim.xaridor.ism_familiya|default:"N/A" }}</p><p class="value">Phone: {{ chiqim.xaridor.telefon_raqam|default:"No phone" }}</p></div>
+        <div class="card"><h3>Total Price</h3><p class="value">${{ chiqim.narx|floatformat:2 }}</p></div>
+        <div class="card"><h3>Initial Payment</h3><p class="value">${{ chiqim.tolangan_summa|floatformat:2 }}</p></div>
+        <div class="card"><h3>Total Paid Amount</h3><p class="value">${{ total_paid|floatformat:2 }}</p></div>
+        <div class="card redor
+        <div class="card"><h3>Remaining Balance</h3><p class="value">${{ remaining_debt|floatformat:2 }}</p></div>
+        <div class="card"><h3>Debt Percentage</h3><p class="value">{{ payment_schedule.0.debt_percentage|floatformat:2 }}%</p></div>
+        <div class="card"><h3>Payment Term</h3><p class="value">{{ chiqim.bo_lib_tolov_muddat }} months</p></div>
+        <div class="card"><h3>First Payment Date</h3><p class="value">{{ chiqim.tolov_sana|date:"Y-m-d" }}</p></div>
+        <div class="card"><h3>Notes</h3><p class="value">{{ chiqim.izoh|default:"No notes" }}</p></div>
+        {% if chiqim.hujjatlar %}<div class="card"><h3>Documents</h3><p class="value"><a href="{{ chiqim.hujjatlar.url }}" target="_blank" class="link">View Document</a></p></div>{% endif %}
+    </div>
+    <section class="payment-schedule-section mt-5">
+        <h2 class="section-title">Payment Schedule</h2>
+        <div class="filter-section">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by month..." aria-label="Search payments by month">
+            <select id="filterStatus" class="filter-select" aria-label="Filter payments by status">
+                <option value="">Filter by Status</option>
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
+            </select>
+        </div>
+        {% if payment_schedule %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead><tr><th>Month</th><th>Date</th><th>Payment Amount</th><th>Paid Amount</th><th>Status</th><th>Days Remaining</th><th>Balance</th><th>Progress</th><th>Next Payment</th></tr></thead>
+                <tbody id="paymentTableBody">
+                    {% for payment in payment_schedule %}
+                    <tr data-month="{{ payment.month }}" data-status="{% if payment.is_paid %}paid{% else %}unpaid{% endif %}">
+                        <td>{{ payment.month }}</td>
+                        <td>{{ payment.date|date:"Y-m-d" }}</td>
+                        <td>${{ payment.amount|floatformat:2 }}</td>
+                        <td>${{ payment.paid_amount|floatformat:2 }}</td>
+                        <td><span class="status {% if payment.is_paid %}paid{% else %}unpaid{% endif %}">
+                            {% if payment.is_paid %}Paid{% else %}Unpaid{% endif %}</span></td>
+                        <td>{% if payment.days_left > 0 %}{{ payment.days_left }} days{% else %}Overdue{% endif %}</td>
+                        <td>${{ payment.carryover|floatformat:2 }}</td>
+                        <td><div class="progress-bar"><div class="progress" style="width: {{ payment.progress_percentage|floatformat:2 }}%;"></div></div><span class="progress-text">{{ payment.progress_percentage|floatformat:2 }}%</span></td>
+                        <td>{% if not payment.is_paid and payment.pending_debt > 0 %}${{ payment.pending_debt|floatformat:2 }} due{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><i class="bi bi-exclamation-circle"></i><p>No payment schedule available.</p></div>
+        {% endif %}
+    </section>
+    <section class="payment-history-section mt-5">
+        <div class="page-header"><h2 class="section-title">Payment History</h2><button class="btn-add" onclick="openAddPaymentForm({{ chiqim.id }})"><i class="bi bi-cash-coin"></i> Add Payment</button></div>
+        {% if chiqim.tolovlar.exists %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead><tr><th>Date</th><th>Amount</th><th>Payment Type</th><th>Customer</th><th>Actions</th></tr></thead>
+                <tbody>
+                    {% for tolov in chiqim.tolovlar.all %}
+                    <tr data-id="{{ tolov.id }}"><td>{{ tolov.sana|date:"Y-m-d" }}</td><td>${{ tolov.summa|floatformat:2 }}</td><td>{{ tolov.get_tolov_turi_display }}</td><td>{{ tolov.xaridor.ism_familiya }}</td>
+                        <td><div class="action-buttons"><button class="btn-action btn-edit" onclick="openEditPaymentForm({{ tolov.id }})"><i class="bi bi-pencil"></i> Edit</button>
+                            <button class="btn-action btn-delete" onclick="openDeletePaymentForm({{ tolov.id }})"><i class="bi bi-trash"></i> Delete</button></div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><i class="bi bi-exclamation-circle"></i><p>No payments available yet.</p></div>
+        {% endif %}
+    </section>
+    <div class="action-section mt-5">
+        <div class="action-buttons">
+            <button class="btn-action btn-edit" onclick="openEditChiqimForm({{ chiqim.id }})"><i class="bi bi-pencil"></i> Edit</button>
+            <button class="btn-action btn-delete" onclick="openDeleteChiqimForm({{ chiqim.id }})"><i class="bi bi-trash"></i> Delete</button>
+            <button class="btn-action btn-payment" onclick="openAddPaymentForm({{ chiqim.id }})"><i class="bi bi-cash-coin"></i> Payment</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('searchInput');
+        const filterStatus = document.getElementById('filterStatus');
+        const tableBody = document.getElementById('paymentTableBody');
+
+        function filterTable() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const statusFilter = filterStatus.value;
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const month = row.dataset.month.toLowerCase();
+                const status = row.dataset.status;
+                const matchesSearch = month.includes(searchTerm);
+                const matchesStatus = !statusFilter || status === statusFilter;
+                row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+            });
+        }
+        searchInput.addEventListener('input', filterTable);
+        filterStatus.addEventListener('change', filterTable);
+
+        function clearErrors() {
+            document.querySelectorAll('.is-invalid, .invalid-feedback').forEach(el => {
+                el.classList.remove('is-invalid');
+                if (el.classList.contains('invalid-feedback')) el.remove();
+            });
+        }
+
+        async function submitForm(formId, url, successMessage) {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    clearErrors();
+                    const formData = new FormData(form);
+                    try {
+                        const response = await fetch(url, { method: 'POST', body: formData, headers: { 'X-CSRFToken': getCookie('csrftoken') } });
+                        const data = await response.json();
+                        if (data.success) {
+                            showAlert('success', successMessage);
+                            closeFormSidebar();
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            displayErrors(data.errors || { '__all__': ['An error occurred'] });
+                        }
+                    } catch (error) {
+                        console.error('Form submission error:', error);
+                        showAlert('error', 'Error connecting to the server');
+                    }
+                }, { once: true });
+            }
+        }
+
+        window.openEditChiqimForm = (id) => {
+            openFormSidebar(`/chiqim/edit/${id}/`, "Edit Expense");
+            setTimeout(() => submitForm('chiqimForm', `/chiqim/edit/${id}/`, "Expense successfully updated!"), 300);
+        };
+        window.openDeleteChiqimForm = (id) => {
+            openFormSidebar(`/chiqim/delete/${id}/`, "Delete Expense");
+            setTimeout(() => submitForm('chiqimDeleteForm', `/chiqim/delete/${id}/`, "Expense successfully deleted!"), 300);
+        };
+        window.openAddPaymentForm = (chiqimId) => {
+            openFormSidebar(`/chiqim/payment/add/${chiqimId}/`, "Add Payment");
+            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/add/${chiqimId}/`, "Payment successfully added!"), 300);
+        };
+        window.openEditPaymentForm = (tolovId) => {
+            openFormSidebar(`/chiqim/payment/edit/${tolovId}/`, "Edit Payment");
+            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/edit/${tolovId}/`, "Payment successfully updated!"), 300);
+        };
+        window.openDeletePaymentForm = (tolovId) => {
+            openFormSidebar(`/chiqim/payment/delete/${tolovId}/`, "Delete Payment");
+            setTimeout(() => submitForm('tolovDeleteForm', `/chiqim/payment/delete/${tolovId}/`, "Payment successfully deleted!"), 300);
+        };
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root { --primary: #4361ee; --secondary: #3f37c9; --accent: #4895ef; --danger: #f72585; --success: #4cc9f0; --dark: #212529; --light: #f8f9fa; --shadow-sm: 0 1px 3px rgba(0,0,0,0.12); --shadow-md: 0 4px 6px rgba(0,0,0,0.1); --radius-sm: 0.25rem; --radius-md: 0.5rem; --transition: all 0.3s ease; }
+    .container-xl { max-width: 1400px; padding: 2rem 1rem; margin: 0 auto; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .page-title, .section-title { color: var(--dark); font-weight: 600; margin: 0; }
+    .btn { border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-sm); font-weight: 500; transition: var(--transition); display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    .btn-secondary { background-color: #6c757d; color: white; }
+    .btn-secondary:hover { background-color: #5a6268; box-shadow: var(--shadow-sm); }
+    .btn-add { background-color: var(--accent); color: white; }
+    .btn-add:hover { background-color: var(--secondary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .card { background: white; border: 1px solid #e0e0e0; border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-sm); transition: var(--transition); }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .card h3 { font-size: 0.875rem; color: #6c757d; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .value { font-size: 1.125rem; font-weight: 500; color: var(--dark); margin: 0; }
+    .link { color: var(--primary); text-decoration: none; }
+    .link:hover { text-decoration: underline; }
+    .payment-schedule-section, .payment-history-section { background: white; border-radius: var(--radius-md); padding: 2rem; box-shadow: var(--shadow-sm); margin-bottom: 2rem; }
+    .filter-section { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .search-input, .filter-select { padding: 0.5rem 1rem; border: 1px solid #ced4da; border-radius: var(--radius-sm); font-size: 1rem; width: 220px; transition: border-color 0.2s; }
+    .search-input:focus, .filter-select:focus { border-color: var(--primary); outline: none; }
+    .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e9ecef; }
+    .data-table th { background: #f1f3f5; font-size: 0.75rem; text-transform: uppercase; color: #495057; letter-spacing: 0.5px; }
+    .data-table tr:hover { background: #f8f9fa; }
+    .status { padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.875rem; font-weight: 500; display: inline-block; }
+    .paid { background: #d4edda; color: #155724; }
+    .unpaid { background: #f8d7da; color: #721c24; }
+    .progress-bar { width: 100%; height: 8px; background: #e9ecef; border-radius: var(--radius-sm); overflow: hidden; }
+    .progress { height: 100%; background: var(--success); transition: width 0.3s ease; }
+    .progress-text { font-size: 0.875rem; color: #6c757d; margin-top: 0.25rem; display: block; }
+    .action-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .btn-action { padding: 0.5rem 1rem; font-size: 0.875rem; border: none; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.25rem; transition: var(--transition); cursor: pointer; }
+    .btn-edit { background: var(--primary); color: white; }
+    .btn-edit:hover { background: var(--secondary); box-shadow: var(--shadow-sm); }
+    .btn-delete { background: var(--danger); color: white; }
+    .btn-delete:hover { background: #d1145a; box-shadow: var(--shadow-sm); }
+    .btn-payment { background: var(--success); color: white; }
+    .btn-payment:hover { background: #3ab4d9; box-shadow: var(--shadow-sm); }
+    .action-section { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
+    .empty-state { text-align: center; padding: 2rem; background: white; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+    .empty-state i { font-size: 2.5rem; color: #adb5bd; margin-bottom: 1rem; }
+    .empty-state p { color: #6c757d; font-size: 1rem; }
+    @media (max-width: 992px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } .data-table th, .data-table td { padding: 0.75rem; } }
+    @media (max-width: 768px) { .container-xl { padding: 1.5rem 1rem; } .card-grid { grid-template-columns: 1fr; } .filter-section { flex-direction: column; } .search-input, .filter-select { width: 100%; } .data-table { display: block; overflow-x: auto; white-space: nowrap; } .action-buttons { flex-direction: column; } .btn-action { width: 100%; justify-content: center; } }
+    @media (max-width: 576px) { .page-header { flex-direction: column; align-items: flex-start; } .data-table th, .data-table td { font-size: 0.875rem; padding: 0.5rem; } }
+</style>
+{% endblock %}

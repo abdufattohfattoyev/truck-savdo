@@ -1,0 +1,136 @@
+{% load format_filters %}
+
+<div class="detail-content">
+    <div class="detail-header">
+        <h4>{{ truck.make }} {{ truck.model }} ({{ truck.year }})</h4>
+        <div class="price text-primary">${{ truck.price|format_number }}</div>
+    </div>
+    <div class="detail-section">
+        <div class="detail-row"><span>Horsepower (HP):</span><strong>{{ truck.horsepower }} HP</strong></div>
+        <div class="detail-row"><span>Location:</span><strong>{{ truck.location }}</strong></div>
+        <div class="detail-row"><span>Company:</span><strong>{{ truck.company|default:"Not Available" }}</strong></div>
+        <div class="detail-row"><span>Purchase Date:</span><strong>{{ truck.purchase_date|date:"Y-m-d" }}</strong></div>
+        <div class="detail-row"><span>Added Date:</span><strong>{{ truck.created_date|date:"Y-m-d H:i" }}</strong></div>
+        <div class="detail-row">
+            <span>Status:</span>
+            <strong class="{% if truck.sotilgan %}text-danger{% else %}text-success{% endif %}">
+                {{ truck.sotilgan|yesno:"Sold,Active" }}
+            </strong>
+        </div>
+    </div>
+    <div class="detail-section">
+        <h5><i class="bi bi-wallet2"></i> Expenses</h5>
+        <div class="detail-row"><span>Total Expenses:</span><strong class="text-warning">${{ xarajat_sum|format_number }}</strong></div>
+        <div class="detail-row"><span>Total Price:</span><strong class="text-success">${{ umumiy_narx|format_number }}</strong></div>
+    </div>
+    {% if truck.description %}
+    <div class="detail-section">
+        <h5><i class="bi bi-card-text"></i> Description</h5>
+        <div class="description">{{ truck.description }}</div>
+    </div>
+    {% endif %}
+    <div class="detail-section">
+        <h5><i class="bi bi-file-earmark-text"></i> Documents</h5>
+        <div class="documents">
+            {% if truck.documents %}
+            <a href="{{ truck.documents.url }}" target="_blank" class="doc-link">
+                <i class="bi bi-file-earmark-pdf"></i> Download
+            </a>
+            {% else %}
+            <span class="text-muted">Not Available</span>
+            {% endif %}
+        </div>
+    </div>
+    {% if truck.image %}
+    <div class="detail-section">
+        <h5><i class="bi bi-image"></i> Image</h5>
+        <img src="{{ truck.image.url }}" alt="{{ truck.make }} {{ truck.model }}" style="width: 100%; border-radius: 8px;">
+    </div>
+    {% endif %}
+    <div class="detail-section actions">
+        <button class="btn btn-accent" onclick="window.location.href='/truck/edit/{{ truck.id }}/'" aria-label="Edit">
+            <i class="bi bi-pencil"></i> Edit
+        </button>
+        <button class="btn btn-danger" onclick="confirmDelete({{ truck.id }}, '{{ truck.make }} {{ truck.model }}')" aria-label="Delete">
+            <i class="bi bi-trash"></i> Delete
+        </button>
+    </div>
+</div>
+
+<style>
+    .detail-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .detail-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .description {
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 6px;
+        line-height: 1.6;
+    }
+
+    .actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .btn-accent {
+        background-color: var(--accent-color);
+        color: white;
+    }
+
+    .btn-accent:hover {
+        background-color: #16a085;
+    }
+
+    .btn-danger {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+    }
+</style>
+
+<script>
+function confirmDelete(truckId, truckName) {
+    if (confirm(`Are you sure you want to delete "${truckName}"? This action cannot be undone!`)) {
+        fetch(`/delete-truck/${truckId}/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeDetailSidebar();
+                showAlert('success', data.message);
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showAlert('error', 'An error occurred while deleting: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'An error occurred');
+        });
+    }
+}
+</script>

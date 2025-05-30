@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+
+{% block title %}Xarajatlar - Truck Savdo{% endblock %}
+
+{% block content %}
+<div class="xarajatlar-container">
+    <div class="xarajatlar-header">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="xarajatlar-title">
+                <i class="bi bi-wallet2 me-2"></i>Xarajatlar
+            </h1>
+            <button onclick="openAddXarajatForm()" class="btn btn-success btn-add-xarajat">
+                <i class="bi bi-plus-lg me-1"></i>Xarajat Qo'shish
+            </button>
+        </div>
+
+        <div class="stats-filter-row mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <i class="bi bi-wallet2 stat-icon"></i>
+                            <div>
+                                <h6 class="stat-title">Jami Xarajatlar</h6>
+                                <h3 class="stat-value">{{ xarajatlar.count }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <i class="bi bi-cash-stack stat-icon"></i>
+                            <div>
+                                <h6 class="stat-title">Umumiy Summa</h6>
+                                <h3 class="stat-value">${{ total_xarajat|floatformat:"2" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <form method="GET" action="{% url 'xarajatlar_list' %}" class="filter-form">
+                        <div class="input-group">
+                            <select name="truck_id" class="form-select filter-input" onchange="this.form.submit()">
+                                <option value="">Barcha Mashinalar</option>
+                                {% for truck in trucks %}
+                                <option value="{{ truck.id }}" {% if selected_truck.id == truck.id %}selected{% endif %}>
+                                    {{ truck.make }} {{ truck.model }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-primary filter-btn" type="submit">
+                                <i class="bi bi-funnel"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="xarajatlar-table">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light sticky-header">
+                            <tr>
+                                <th>Mashina</th>
+                                <th>Xarajat Turi</th>
+                                <th>Miqdor</th>
+                                <th>Sana</th>
+                                <th>Izoh</th>
+                                <th class="text-end" style="width: 180px;">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for xarajat in xarajatlar %}
+                            <tr class="xarajat-row">
+                                <td>{{ xarajat.truck.make }} {{ xarajat.truck.model }}</td>
+                                <td>{{ xarajat.get_xarajat_turi_display }}</td>
+                                <td>${{ xarajat.miqdor|floatformat:"2" }}</td>
+                                <td>{{ xarajat.sana }}</td>
+                                <td>{{ xarajat.izoh|default:"Izoh yo'q" }}</td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button onclick="openEditXarajatForm({{ xarajat.id }})"
+                                                class="btn btn-outline-primary btn-sm action-btn">
+                                            <i class="bi bi-pencil"></i> Tahrirlash
+                                        </button>
+                                        <button onclick="openDeleteXarajatForm({{ xarajat.id }})"
+                                                class="btn btn-outline-danger btn-sm action-btn">
+                                            <i class="bi bi-trash"></i> O'chirish
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
+                                    {% if selected_truck %}
+                                    "{{ selected_truck.make }} {{ selected_truck.model }}" uchun xarajatlar mavjud emas
+                                    {% else %}
+                                    Hozircha xarajatlar mavjud emas
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .xarajatlar-container {
+        padding: 1.5rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    .xarajatlar-title {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 1.75rem;
+    }
+    .btn-add-xarajat {
+        padding: 0.5rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .btn-add-xarajat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .stats-filter-row {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+    }
+    .stat-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        height: 100%;
+    }
+    .stat-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .stat-icon {
+        font-size: 1.5rem;
+        color: #4e73df;
+        background-color: #e9f0fd;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bi-cash-stack {
+        color: #1cc88a;
+        background-color: #e6f7f0;
+    }
+    .stat-title {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+    .stat-value {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0;
+        font-size: 1.25rem;
+    }
+    .filter-form {
+        height: 100%;
+    }
+    .filter-input {
+        border-radius: 8px 0 0 8px !important;
+        border-right: none;
+        height: 50px;
+    }
+    .filter-btn {
+        border-radius: 0 8px 8px 0 !important;
+        height: 50px;
+        width: 50px;
+    }
+    .table {
+        margin-bottom: 0;
+    }
+    .sticky-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8f9fa;
+    }
+    .table th {
+        font-weight: 600;
+        color: #4a4a4a;
+        white-space: nowrap;
+        padding: 1rem;
+    }
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        background-color: white;
+    }
+    .xarajat-row:hover {
+        background-color: #f8fafc;
+    }
+    .action-btn {
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .action-btn i {
+        margin-right: 0.3rem;
+    }
+    .action-btn:hover {
+        transform: translateY(-1px);
+    }
+    .btn-outline-primary {
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+    .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: white;
+    }
+    .btn-outline-danger {
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+    @media (max-width: 992px) {
+        .stats-filter-row .row {
+            flex-direction: column;
+        }
+        .stat-card {
+            margin-bottom: 1rem;
+        }
+        .filter-form {
+            margin-top: 1rem;
+        }
+    }
+    @media (max-width: 768px) {
+        .xarajatlar-container {
+            padding: 1rem;
+        }
+        .xarajatlar-title {
+            font-size: 1.5rem;
+        }
+        .stat-value {
+            font-size: 1.1rem;
+        }
+        .table th, .table td {
+            padding: 0.75rem;
+        }
+        .action-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+        .action-btn i {
+            margin-right: 0;
+        }
+        .action-btn span {
+            display: none;
+        }
+    }
+
+    /* O'chirish formasining stillari */
+    .delete-xarajat-form {
+        padding: 1rem;
+    }
+    .delete-xarajat-form h4 {
+        font-size: 1.25rem;
+    }
+    .delete-xarajat-form .alert {
+        font-size: 0.9rem;
+        border-radius: 8px;
+    }
+    .delete-xarajat-form .btn {
+        border-radius: 8px;
+        padding: 0.75rem;
+        font-weight: 500;
+    }
+    .delete-xarajat-form .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    .delete-xarajat-form .btn-outline-secondary {
+        border-color: #dee2e6;
+    }
+    @media (max-width: 576px) {
+        .delete-xarajat-form {
+            padding: 0.75rem;
+        }
+        .delete-xarajat-form h4 {
+            font-size: 1.1rem;
+        }
+        .delete-xarajat-form .alert {
+            font-size: 0.85rem;
+        }
+        .delete-xarajat-form .btn {
+            padding: 0.5rem;
+            font-size: 0.85rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const actionButtons = document.querySelectorAll('.action-btn');
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    const rows = document.querySelectorAll('.xarajat-row');
+    rows.forEach(row => {
+        row.addEventListener('mouseenter', () => {
+            row.style.transform = 'translateX(2px)';
+        });
+        row.addEventListener('mouseleave', () => {
+            row.style.transform = '';
+        });
+    });
+
+    const overlay = document.getElementById('overlay');
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            const formSidebar = document.getElementById('formSidebar');
+            if (formSidebar) {
+                formSidebar.classList.remove('active');
+            }
+            overlay.classList.remove('active');
+        });
+    }
+});
+
+window.openAddXarajatForm = function() {
+    window.openFormSidebar("{% url 'xarajat_add' %}", "Yangi Xarajat Qo'shish");
+};
+
+window.openEditXarajatForm = function(xarajatId) {
+    const editUrl = "{% url 'xarajat_edit' 0 %}".replace('0', xarajatId);
+    window.openFormSidebar(editUrl, "Xarajatni Tahrirlash");
+};
+
+window.openDeleteXarajatForm = async function(xarajatId) {
+    const url = "{% url 'xarajat_delete' 0 %}".replace('0', xarajatId);
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken')}
+        });
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        const formSidebarContent = document.getElementById('formSidebarContent');
+        const formSidebarTitle = document.getElementById('formSidebarTitle');
+        formSidebarContent.innerHTML = data.html;
+        formSidebarTitle.textContent = "Xarajatni O'chirish";
+        document.getElementById('formSidebar').classList.add('active');
+        document.getElementById('overlay').classList.add('active');
+    } catch (error) {
+        console.error('Error loading delete form:', error);
+        window.showAlert('error', 'O\'chirish formasini yuklashda xatolik yuz berdi');
+    }
+};
+</script>
+{% endblock %}

@@ -1,0 +1,514 @@
+{% extends 'base.html' %}
+
+{% block title %}Kirim - Truck Savdo{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="header-top">
+            <h1><i class="bi bi-speedometer2"></i> Kirim</h1>
+            <button onclick="openAddTruckForm()" class="btn btn-accent">
+                <i class="bi bi-plus-lg"></i> Mashina Qo'shish
+            </button>
+        </div>
+
+        <!-- Stats and Search -->
+        <div class="stats-search-container">
+            <div class="stat-card">
+                <i class="bi bi-truck"></i>
+                <div>
+                    <span>Jami Trucklar</span>
+                    <strong>{{ trucks|length }}</strong>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="bi bi-cash-stack"></i>
+                <div>
+                    <span>Jami Summa</span>
+                    <strong>${{ total_price|floatformat:"0" }}</strong>
+                </div>
+            </div>
+            <form method="GET" action="{% url 'dashboard' %}" class="search-form">
+                <input type="text" name="q" placeholder="Qidiruv (brend, model, seriya...)" value="{{ request.GET.q }}">
+                <button type="submit"><i class="bi bi-search"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Trucks Grid -->
+    <div class="trucks-grid">
+        {% for truck in trucks %}
+        <div class="truck-card" onclick="showTruckDetails({{ truck.id }})">
+            {% if truck.image %}
+            <img src="{{ truck.image.url }}" alt="{{ truck.make }}" loading="lazy">
+            {% else %}
+            <div class="no-image"><i class="bi bi-image"></i></div>
+            {% endif %}
+            <div class="truck-info">
+                <h3>{{ truck.make }} {{ truck.model }}</h3>
+                <div class="truck-meta">
+                    <span><i class="bi bi-calendar3"></i> {{ truck.year }}</span>
+                    <span><i class="bi bi-lightning-charge"></i> {{ truck.horsepower }} HP</span>
+                </div>
+                <div class="truck-footer">
+                    <span class="price">${{ truck.price|floatformat:"0" }}</span>
+                    <div class="actions">
+                        <button onclick="event.stopPropagation(); openEditTruckForm({{ truck.id }})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); confirmDelete({{ truck.id }}, '{{ truck.make }} {{ truck.model }}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-info-circle"></i>
+            {% if request.GET.q %}"{{ request.GET.q }}" so'rovi bo'yicha natija topilmadi{% else %}Hozircha trucklar mavjud emas{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if trucks.paginator.num_pages > 1 %}
+    <div class="pagination">
+        {% if trucks.has_previous %}
+        <a href="?page={{ trucks.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        {% endif %}
+
+        {% for num in trucks.paginator.page_range %}
+        <a {% if trucks.number == num %}class="active"{% endif %}
+           href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a>
+        {% endfor %}
+
+        {% if trucks.has_next %}
+        <a href="?page={{ trucks.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modals and Sidebars -->
+<div class="truck-details-sidebar" id="truckDetailsSidebar">
+    <div class="sidebar-header">
+        <h3>Mashina Tafsilotlari</h3>
+        <button class="btn-close" onclick="closeTruckDetails()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="sidebar-content" id="truckDetailsContent"></div>
+</div>
+
+<div class="truck-details-sidebar" id="formSidebar">
+    <div class="sidebar-header">
+        <h3 id="formSidebarTitle">Yangi Mashina Qo'shish</h3>
+        <button class="btn-close" onclick="closeFormSidebar()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="sidebar-content" id="formSidebarContent"></div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeTruckDetails(); closeFormSidebar()"></div>
+
+<div class="modal" id="deleteConfirmationModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5>O'chirishni tasdiqlang</h5>
+            <button onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+            <p>Haqiqatan ham <strong id="truckNameToDelete"></strong> ni o'chirmoqchimisiz?</p>
+            <p class="text-danger">Bu amalni qaytarib bo'lmaydi!</p>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeModal()">Bekor qilish</button>
+            <form id="deleteTruckForm" method="POST" action="">
+                {% csrf_token %}
+                <button type="submit" class="danger">O'chirish</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="alertContainer" class="alert-container"></div>
+
+<script>
+// Truck data
+let trucksData = {
+    {% for truck in trucks %}
+    {{ truck.id }}: {
+        id: {{ truck.id }}, make: "{{ truck.make|escapejs }}", model: "{{ truck.model|escapejs }}",
+        year: {{ truck.year }}, horsepower: {{ truck.horsepower }}, price: {{ truck.price }},
+        company: "{{ truck.company|escapejs }}", location: "{{ truck.location|escapejs }}",
+        documents: "{% if truck.documents %}{{ truck.documents.url|escapejs }}{% endif %}",
+        description: "{{ truck.description|escapejs }}",
+        purchase_date: "{{ truck.purchase_date|date:'Y-m-d' }}",
+        created_date: "{{ truck.created_date|date:'Y-m-d H:i' }}",
+        seriya: {% if truck.seriya %}{{ truck.seriya }}{% else %}null{% endif %}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+// Core functions
+function showTruckDetails(truckId) {
+    const truck = trucksData[truckId];
+    const content = document.getElementById('truckDetailsContent');
+
+    if (truck) {
+        content.innerHTML = `
+            <div class="detail-header">
+                <h4>${truck.make} ${truck.model}</h4>
+                <div class="price">$${truck.price.toLocaleString()}</div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-row"><span>Ishlab chiqarilgan yili:</span><strong>${truck.year}</strong></div>
+                <div class="detail-row"><span>Ot kuchi (HP):</span><strong>${truck.horsepower} HP</strong></div>
+                <div class="detail-row"><span>Seriya raqami:</span><strong>${truck.seriya || "Mavjud emas"}</strong></div>
+                <div class="detail-row"><span>Joylashuv:</span><strong>${truck.location}</strong></div>
+                <div class="detail-row"><span>Kompaniya:</span><strong>${truck.company || "Mavjud emas"}</strong></div>
+                <div class="detail-row"><span>Sotib olingan sana:</span><strong>${truck.purchase_date}</strong></div>
+                <div class="detail-row"><span>Qo'shilgan sana:</span><strong>${truck.created_date}</strong></div>
+            </div>
+            ${truck.description ? `<div class="detail-section">
+                <h5><i class="bi bi-card-text"></i> Tavsif</h5>
+                <div class="description">${truck.description}</div>
+            </div>` : ''}
+            <div class="detail-section">
+                <h5><i class="bi bi-file-earmark-text"></i> Dokumentlar</h5>
+                <div class="documents">
+                    ${truck.documents ? `<a href="${truck.documents}" target="_blank" class="doc-link">
+                        <i class="bi bi-file-earmark-pdf"></i> Yuklab olish
+                    </a>` : '<span class="text-muted">Mavjud emas</span>'}
+                </div>
+            </div>`;
+
+        document.getElementById('truckDetailsSidebar').classList.add('active');
+        document.getElementById('sidebarOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    } else {
+        content.innerHTML = '<div class="error">Mashina ma\'lumotlari topilmadi</div>';
+    }
+}
+
+function closeTruckDetails() {
+    document.getElementById('truckDetailsSidebar').classList.remove('active');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function confirmDelete(truckId, truckName) {
+    document.getElementById('truckNameToDelete').textContent = truckName;
+    document.getElementById('deleteTruckForm').action = `/delete-truck/${truckId}/`;
+    document.getElementById('deleteConfirmationModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('deleteConfirmationModal').style.display = 'none';
+}
+
+function openAddTruckForm() {
+    fetchForm('/add-truck/', 'Yangi Mashina Qo\'shish');
+}
+
+function openEditTruckForm(truckId) {
+    fetchForm(`/truck/edit/${truckId}/`, 'Mashina Tahrirlash');
+}
+
+function fetchForm(url, title) {
+    const titleEl = document.getElementById('formSidebarTitle');
+    const content = document.getElementById('formSidebarContent');
+
+    titleEl.textContent = title;
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            content.innerHTML = data.html;
+            document.getElementById('formSidebar').classList.add('active');
+            document.getElementById('sidebarOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            initForm();
+        } else console.error('Failed to load form:', data.message);
+    })
+    .catch(e => console.error('Error:', e));
+}
+
+function closeFormSidebar() {
+    document.getElementById('formSidebar').classList.remove('active');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function initForm() {
+    document.querySelectorAll('.invalid-feedback').forEach(el => {
+        el.textContent = ''; el.style.display = 'none';
+    });
+
+    const form = document.getElementById('truckAddForm') || document.getElementById('editTruckForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Yuklanmoqda...';
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', form.id === 'editTruckForm' ? 'Muvaffaqiyatli yangilandi!' : data.message);
+                    if (data.truck) {
+                        trucksData[data.truck.id] = {
+                            id: data.truck.id, make: data.truck.make, model: data.truck.model,
+                            year: data.truck.year, horsepower: data.truck.horsepower, price: data.truck.price,
+                            company: data.truck.company || "", location: data.truck.location,
+                            documents: data.truck.documents || "", description: data.truck.description || "",
+                            purchase_date: data.truck.purchase_date || "", created_date: data.truck.created_date || "",
+                            seriya: data.truck.seriya
+                        };
+                    }
+                    closeFormSidebar();
+                    window.location.reload();
+                } else {
+                    showAlert('error', data.message || 'Xatolik yuz berdi');
+                    if (data.errors) {
+                        Object.keys(data.errors).forEach(field => {
+                            const errorDiv = document.getElementById(`${field}-error`);
+                            if (errorDiv) {
+                                errorDiv.textContent = data.errors[field];
+                                errorDiv.style.display = 'block';
+                            }
+                        });
+                    }
+                }
+            })
+            .catch(e => {
+                console.error('Error:', e);
+                showAlert('error', 'Xatolik yuz berdi, iltimos qayta urinib ko\'ring.');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-save me-1"></i>Saqlash';
+            });
+        });
+    }
+}
+
+function showAlert(type, message) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `<span>${message}</span><button onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>`;
+    document.getElementById('alertContainer').appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
+}
+
+// Event listeners
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeTruckDetails(); closeFormSidebar(); }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.truck-card').forEach((card, i) => {
+        card.style.animationDelay = `${i * 0.1}s`;
+    });
+});
+</script>
+
+<style>
+:root {
+    --primary: #2c3e50; --accent: #1abc9c; --danger: #e74c3c;
+    --text: #333; --light: #f8f9fa; --border: #e0e0e0;
+    --shadow: 0 2px 10px rgba(0,0,0,0.1); --transition: all 0.3s ease;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text); background: #f5f5f5; line-height: 1.5;
+}
+
+.dashboard-container { max-width: 1400px; margin: 0 auto; padding: 1rem; }
+.dashboard-header { margin-bottom: 1.5rem; }
+.header-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;
+}
+h1 { font-size: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 1rem;
+    border-radius: 8px; font-weight: 500; cursor: pointer; transition: var(--transition); border: none; gap: 0.5rem;
+}
+.btn-accent { background: var(--accent); color: white; }
+.btn-accent:hover { background: #16a085; transform: translateY(-2px); }
+
+.stats-search-container {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+}
+.stat-card {
+    background: white; border-radius: 10px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem;
+    box-shadow: var(--shadow); transition: var(--transition); flex: 1; min-width: 150px;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.stat-card i {
+    font-size: 1.25rem; color: var(--accent); background: rgba(26, 188, 156, 0.1);
+    width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.stat-card div { display: flex; flex-direction: column; }
+.stat-card span { font-size: 0.85rem; color: #666; }
+.stat-card strong { font-size: 1rem; font-weight: 600; }
+
+.search-form { position: relative; flex: 2; min-width: 200px; }
+.search-form input {
+    width: 100%; padding: 0.6rem 2.5rem 0.6rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 0.95rem; transition: var(--transition);
+}
+.search-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2); }
+.search-form button {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #666; cursor: pointer; font-size: 1rem;
+}
+
+.trucks-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;
+}
+.truck-card {
+    background: white; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow);
+    transition: var(--transition); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s forwards;
+}
+@keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+.truck-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+.truck-card img { width: 100%; height: 160px; object-fit: cover; display: block; transition: var(--transition); }
+.truck-card:hover img { transform: scale(1.03); }
+.no-image {
+    width: 100%; height: 160px; background: var(--light); display: flex;
+    align-items: center; justify-content: center; color: #999; font-size: 1.5rem;
+}
+
+.truck-info { padding: 0.75rem; }
+.truck-info h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+.truck-meta { display: flex; gap: 0.75rem; font-size: 0.8rem; color: #666; margin-bottom: 0.5rem; }
+.truck-meta i { margin-right: 0.25rem; }
+.truck-footer { display: flex; justify-content: space-between; align-items: center; }
+.price { font-weight: 600; color: var(--accent); font-size: 1rem; }
+.actions { display: flex; gap: 0.5rem; }
+.actions button {
+    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    border: none; background: var(--light); color: var(--primary); cursor: pointer; transition: var(--transition);
+}
+.actions button:hover { background: #e0e0e0; transform: scale(1.1); }
+.actions button:last-child { color: var(--danger); }
+
+.empty-state { grid-column: 1 / -1; text-align: center; padding: 1.5rem; color: #666; }
+.empty-state i { font-size: 1.5rem; margin-bottom: 0.75rem; display: block; color: #999; }
+
+.pagination { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; }
+.pagination a {
+    display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+    border-radius: 8px; background: white; color: var(--primary); text-decoration: none; box-shadow: var(--shadow); transition: var(--transition);
+}
+.pagination a.active { background: var(--accent); color: white; }
+.pagination a:hover:not(.active) { background: #f0f0f0; }
+
+.truck-details-sidebar, #formSidebar {
+    position: fixed; top: 0; right: -100%; width: 100%; max-width: 360px; height: 100%;
+    background: white; box-shadow: -2px 0 10px rgba(0,0,0,0.1); z-index: 1000; overflow-y: auto; transition: var(--transition);
+}
+.truck-details-sidebar.active, #formSidebar.active { right: 0; }
+
+.sidebar-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+    z-index: 999; opacity: 0; visibility: hidden; transition: var(--transition);
+}
+.sidebar-overlay.active { opacity: 1; visibility: visible; }
+
+.sidebar-header {
+    padding: 0.75rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;
+    align-items: center; position: sticky; top: 0; background: white; z-index: 1;
+}
+.sidebar-content { padding: 0.75rem; }
+
+.detail-header { margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+.detail-header h4 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+.detail-section { margin-bottom: 1rem; }
+.detail-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+.description { padding: 0.5rem; background: var(--light); border-radius: 6px; line-height: 1.6; font-size: 0.9rem; }
+
+.modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center;
+}
+.modal-content {
+    background: white; border-radius: 12px; width: 90%; max-width: 360px; overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2); animation: modalFadeIn 0.3s ease-out;
+}
+@keyframes modalFadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+.modal-header { padding: 0.75rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-footer { padding: 0.75rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.5rem; }
+.modal-footer button { padding: 0.5rem 1rem; border-radius: 6px; }
+.modal-footer button.danger { background: var(--danger); color: white; }
+
+.alert-container { position: fixed; top: 10px; right: 10px; z-index: 1002; display: flex; flex-direction: column; gap: 8px; }
+.alert {
+    background: white; border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); animation: slideIn 0.3s ease-out; max-width: 320px;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+.alert-success { border-left: 4px solid var(--accent); }
+.alert-error { border-left: 4px solid var(--danger); }
+.alert button { background: none; border: none; color: #666; cursor: pointer; font-size: 0.9rem; }
+
+@media (max-width: 768px) {
+    .dashboard-container { padding: 0.75rem; }
+    h1 { font-size: 1.25rem; }
+    .btn { padding: 0.4rem 0.8rem; font-size: 0.9rem; }
+    .stats-search-container { flex-direction: row; flex-wrap: wrap; gap: 0.75rem; }
+    .stat-card { min-width: 130px; padding: 0.5rem; }
+    .stat-card i { width: 36px; height: 36px; font-size: 1rem; }
+    .stat-card span { font-size: 0.8rem; }
+    .stat-card strong { font-size: 0.9rem; }
+    .search-form { min-width: 100%; }
+    .search-form input { font-size: 0.9rem; padding: 0.5rem 2rem 0.5rem 0.75rem; }
+    .trucks-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
+    .truck-card img, .no-image { height: 140px; }
+    .truck-info { padding: 0.5rem; }
+    .truck-info h3 { font-size: 0.9rem; }
+    .truck-meta { font-size: 0.75rem; }
+    .price { font-size: 0.9rem; }
+    .actions button { width: 26px; height: 26px; }
+    .pagination a { width: 32px; height: 32px; font-size: 0.9rem; }
+}
+
+@media (max-width: 480px) {
+    .header-top { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .stats-search-container { flex-direction: column; align-items: stretch; }
+    .stat-card { min-width: 100%; }
+    .search-form { min-width: 100%; }
+    .trucks-grid { grid-template-columns: 1fr; }
+    .truck-card { animation: fadeInUpMobile 0.3s forwards; }
+    @keyframes fadeInUpMobile { to { opacity: 1; transform: translateY(0); } }
+    .truck-details-sidebar, #formSidebar { max-width: 100%; }
+    .modal-content { max-width: 90%; }
+    .alert-container { width: calc(100% - 20px); }
+    .alert { max-width: 100%; font-size: 0.85rem; }
+}
+</style>
+{% endblock %}

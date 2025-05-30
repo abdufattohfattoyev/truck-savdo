@@ -1,0 +1,168 @@
+<div class="p-4">
+    <form method="POST" enctype="multipart/form-data" id="customer-edit-form" action="{% url 'edit_xaridor' xaridor.id %}" class="ajax-form">
+        {% csrf_token %}
+        <div id="errorContainer" class="alert alert-danger d-none"></div>
+        <div class="card p-3">
+            {% for field in xaridor_form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">
+                    {{ field.label }} {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text }}</small>
+                {% endif %}
+                <div class="invalid-feedback" id="{{ field.name }}Error"></div>
+            </div>
+            {% endfor %}
+            <div class="mb-3">
+                <label class="form-label">Existing Documents</label>
+                <div id="documents-list" class="documents-list">
+                    {% include 'xaridorlar/hujjatlar_list.html' with xaridor=xaridor hujjatlar=xaridor.hujjatlar.all %}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="{{ hujjat_form.hujjat.id_for_label }}" class="form-label">{{ hujjat_form.hujjat.label }}</label>
+                {{ hujjat_form.hujjat }}
+                <small class="form-text text-muted">Select multiple files to add new documents (JPG, PNG, PDF, DOC, DOCX)</small>
+            </div>
+            <button type="submit" class="btn btn-accent w-100" data-original-text="Save">
+                <i class="bi bi-save me-2"></i>Save
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+.card {
+    box-shadow: var(--shadow);
+    border-radius: var(--border-radius);
+    background-color: #ecf0f1;
+}
+.form-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+}
+.form-control {
+    font-size: 0.9rem;
+    padding: 0.6rem;
+    border-radius: var(--border-radius);
+}
+.form-control:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2);
+}
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+.list-group-item {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+}
+.list-group-item a, .list-group-item button {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.6rem;
+}
+.alert-danger {
+    font-size: 0.85rem;
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+}
+.btn-accent {
+    font-size: 0.95rem;
+    padding: 0.7rem;
+}
+.btn-outline-danger {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.6rem;
+}
+
+@media (max-width: 768px) {
+    .p-4 {
+        padding: 1rem !important;
+    }
+    .card {
+        padding: 1rem;
+    }
+    .form-label {
+        font-size: 0.85rem;
+    }
+    .form-control {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+    .btn-accent {
+        font-size: 0.9rem;
+        padding: 0.6rem;
+    }
+    .list-group-item {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .p-4 {
+        padding: 0.75rem !important;
+    }
+    .card {
+        padding: 0.75rem;
+    }
+    .form-label {
+        font-size: 0.8rem;
+    }
+    .form-control {
+        font-size: 0.8rem;
+        padding: 0.45rem;
+    }
+    .btn-accent {
+        font-size: 0.85rem;
+        padding: 0.55rem;
+    }
+    .list-group-item {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+    .list-group-item a, .list-group-item button {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update document list after deletion
+    window.deleteHujjat = function(hujjatId) {
+        if (confirm("Are you sure you want to delete this document?")) {
+            fetch(`/xaridorlar/hujjat/delete/${hujjatId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.showAlert('success', data.message);
+                    document.getElementById('documents-list').innerHTML = data.hujjatlar_html;
+                    // Update the main list if necessary
+                    if (typeof window.updateHujjatCell === 'function') {
+                        const xaridorId = {{ xaridor.id }};
+                        window.updateHujjatCell(xaridorId);
+                    }
+                } else {
+                    window.showAlert('error', data.message || "Failed to delete the document!");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.showAlert('error', "An error occurred. Please try again.");
+            });
+        }
+    };
+});
+</script>

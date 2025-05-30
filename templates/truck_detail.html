@@ -1,0 +1,59 @@
+<div class="truck-detail">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <h6 class="detail-title">Ot Kuchi</h6>
+            <p class="detail-text">{{ truck.horsepower|default:"Ma'lumot yo'q" }} HP</p>
+        </div>
+        <div class="col-md-6">
+            <h6 class="detail-title">Kompaniya</h6>
+            <p class="detail-text">{{ truck.company|default:"Ma'lumot yo'q" }}</p>
+        </div>
+        <div class="col-12">
+            <h6 class="detail-title">Tasvir</h6>
+            <p class="detail-text">{{ truck.description|default:"Tasvir yo'q" }}</p>
+        </div>
+        <div class="col-12">
+            <h6 class="detail-title">Hujjatlar</h6>
+            {% if truck.documents %}
+            <a href="{{ truck.documents.url }}" class="detail-link" target="_blank">
+                <i class="bi bi-file-earmark-text me-1"></i>Hujjatni ko'rish
+            </a>
+            {% else %}
+            <p class="detail-text text-muted">Hujjatlar yuklanmagan</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Detallar bo'limi sozlamalari */
+    .truck-detail {
+        font-size: 0.95rem;
+        color: #344054;
+    }
+
+    .detail-title {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .detail-text {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #4b5563;
+    }
+
+    .detail-link {
+        color: #3b82f6;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+
+    .detail-link:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+    }
+</style>

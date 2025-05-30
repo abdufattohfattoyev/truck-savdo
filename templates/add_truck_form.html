@@ -1,0 +1,446 @@
+<div class="add-truck-form compact-form p-3">
+    <!-- Form Header -->
+    <form method="post" enctype="multipart/form-data" id="truckAddForm" action="{% url 'add_truck' %}">
+        {% csrf_token %}
+
+        <!-- Error messages container -->
+        <div id="formErrors" class="alert alert-danger d-none mb-3" role="alert"></div>
+
+        <!-- 1. Basic Information Section -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="mb-3 text-secondary"><i class="bi bi-list-check me-1"></i>Asosiy ma'lumotlar</h6>
+                <div class="row g-3">
+                    <!-- User Field (Visible only for Superuser) -->
+                    {% if request.user.is_superuser %}
+                    <div class="col-12">
+                        <div class="form-floating mb-2">
+                            {{ form.user }}
+                            <label for="{{ form.user.id_for_label }}">Foydalanuvchi</label>
+                            <div class="invalid-feedback" id="user-error"></div>
+                        </div>
+                    </div>
+                    {% else %}
+                        {{ form.user }}
+                    {% endif %}
+
+                    <div class="col-md-6">
+                        <div class="form-floating mb-2">
+                            {{ form.make }}
+                            <label for="{{ form.make.id_for_label }}">Mashina nomi</label>
+                            <div class="invalid-feedback" id="make-error"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-2">
+                            {{ form.model }}
+                            <label for="{{ form.model.id_for_label }}">Model</label>
+                            <div class="invalid-feedback" id="model-error"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-2">
+                            {{ form.year }}
+                            <label for="{{ form.year.id_for_label }}">Chiqarilgan yili</label>
+                            <small class="form-text text-muted">{{ form.year.help_text }}</small>
+                            <div class="invalid-feedback" id="year-error"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-2">
+                            {{ form.horsepower }}
+                            <label for="{{ form.horsepower.id_for_label }}">Ot kuchi (HP)</label>
+                            <small class="form-text text-muted">{{ form.horsepower.help_text }}</small>
+                            <div class="invalid-feedback" id="horsepower-error"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-2">
+                            {{ form.seriya }}
+                            <label for="{{ form.seriya.id_for_label }}">Seriya raqami</label>
+                            <small class="form-text text-muted">{{ form.seriya.help_text }}</small>
+                            <div class="invalid-feedback" id="seriya-error"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Price & Location Section -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="mb-3 text-secondary"><i class="bi bi-cash-coin me-1"></i>Narx va manzil</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-2">
+                            {{ form.price }}
+                            <label for="{{ form.price.id_for_label }}">Narxi ($)</label>
+                            <small class="form-text text-muted">{{ form.price.help_text }}</small>
+                            <div class="invalid-feedback" id="price-error"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-2">
+                            {{ form.location }}
+                            <label for="{{ form.location.id_for_label }}">Joylashuv</label>
+                            <small class="form-text text-muted">{{ form.location.help_text }}</small>
+                            <div class="invalid-feedback" id="location-error"></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-floating mb-2">
+                            {{ form.company }}
+                            <label for="{{ form.company.id_for_label }}">Kompaniya nomi</label>
+                            <small class="form-text text-muted">{{ form.company.help_text }}</small>
+                            <div class="invalid-feedback" id="company-error"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Media Section -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="mb-3 text-secondary"><i class="bi bi-images me-1"></i>Media</h6>
+                <div class="row g-3">
+                    <!-- Image Upload -->
+                    <div class="col-md-6">
+                        <h6 class="small mb-2"><i class="bi bi-car-front me-1"></i>Mashina rasmi</h6>
+                        <div class="file-upload-box mb-2">
+                            <label for="id_image" class="btn btn-outline-accent w-100 text-start">
+                                <i class="bi bi-upload me-2"></i>Rasm yuklash
+                            </label>
+                            {{ form.image }}
+                        </div>
+                        <small class="form-text text-muted">{{ form.image.help_text }}</small>
+                        <div class="invalid-feedback" id="image-error"></div>
+                    </div>
+
+                    <!-- Documents Upload -->
+                    <div class="col-md-6">
+                        <h6 class="small mb-2"><i class="bi bi-file-earmark-text me-1"></i>Dokumentlar</h6>
+                        <div class="file-upload-box mb-2">
+                            <label for="id_documents" class="btn btn-outline-accent w-100 text-start">
+                                <i class="bi bi-upload me-2"></i>Hujjat yuklash
+                            </label>
+                            {{ form.documents }}
+                        </div>
+                        <small class="form-text text-muted">{{ form.documents.help_text }}</small>
+                        <div class="invalid-feedback" id="documents-error"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Description Section -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="mb-3 text-secondary"><i class="bi bi-card-text me-1"></i>Qo'shimcha ma'lumot</h6>
+                <div class="form-floating">
+                    {{ form.description }}
+                    <label for="{{ form.description.id_for_label }}">Qo'shimcha izohlar</label>
+                    <div class="invalid-feedback" id="description-error"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="d-flex gap-2 mt-4">
+            <button type="button" class="btn btn-outline-secondary flex-grow-1" onclick="closeFormSidebar()">
+                <i class="bi bi-x-circle me-1"></i>Bekor qilish
+            </button>
+            <button type="submit" class="btn btn-accent flex-grow-1" id="submitBtn">
+                <i class="bi bi-save me-1"></i>Saqlash
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    :root {
+        --primary-color: #2c3e50;
+        --accent-color: #1abc9c;
+        --text-color: #ffffff;
+        --bg-color: #f4f6f9;
+        --shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .add-truck-form {
+        background-color: #ffffff;
+        border-radius: 8px;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    .text-primary {
+        color: var(--primary-color) !important;
+    }
+
+    .text-secondary {
+        color: #6c757d !important;
+    }
+
+    .card {
+        transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+    }
+
+    .form-floating label {
+        color: #6c757d;
+        transition: all 0.2s ease;
+    }
+
+    .form-floating input:focus,
+    .form-floating select:focus,
+    .form-floating textarea:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 6px;
+        height: calc(3.5rem + 2px);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--accent-color);
+    }
+
+    .invalid-feedback {
+        font-size: 0.85rem;
+        color: #ff3b30;
+    }
+
+    .file-upload-box {
+        position: relative;
+    }
+
+    .file-upload-box input[type="file"] {
+        display: none;
+    }
+
+    .btn-outline-accent {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+        transition: all 0.2s ease;
+    }
+
+    .btn-outline-accent:hover {
+        background-color: var(--accent-color);
+        color: var(--text-color);
+    }
+
+    .btn-accent {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+        color: var(--text-color);
+    }
+
+    .btn-accent:hover {
+        background-color: #16a085;
+        border-color: #16a085;
+    }
+
+    .form-text {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    textarea.form-control {
+        height: 100px;
+        resize: vertical;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .add-truck-form {
+            padding: 1rem;
+        }
+
+        h4 {
+            font-size: 1.25rem;
+        }
+
+        h6 {
+            font-size: 0.9rem;
+        }
+
+        .form-control,
+        .form-select {
+            height: calc(3rem + 2px);
+            font-size: 0.9rem;
+        }
+
+        .form-floating label {
+            font-size: 0.9rem;
+        }
+
+        .invalid-feedback {
+            font-size: 0.75rem;
+        }
+
+        .btn {
+            font-size: 0.9rem;
+            padding: 0.4rem 0.8rem;
+        }
+
+        .file-upload-box label {
+            font-size: 0.9rem;
+        }
+
+        .form-text {
+            font-size: 0.75rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .add-truck-form {
+            padding: 0.75rem;
+        }
+
+        .row.g-3 {
+            gap: 0.75rem !important;
+        }
+
+        .form-control,
+        .form-select {
+            height: calc(2.75rem + 2px);
+            font-size: 0.85rem;
+        }
+
+        .btn {
+            font-size: 0.85rem;
+            padding: 0.3rem 0.6rem;
+        }
+    }
+</style>
+
+<script>
+    // Function to reset form errors
+    function resetFormErrors(form) {
+        const errorContainer = document.getElementById('formErrors');
+        errorContainer.classList.add('d-none');
+        errorContainer.textContent = '';
+        const errorFields = ['user', 'make', 'model', 'year', 'horsepower', 'price', 'location', 'company', 'image', 'documents', 'description', 'seriya'];
+        errorFields.forEach(field => {
+            const errorDiv = document.getElementById(`${field}-error`);
+            const input = document.getElementById(`id_${field}`);
+            if (errorDiv && input) {
+                errorDiv.textContent = '';
+                input.classList.remove('is-invalid');
+            }
+        });
+    }
+
+    // Function to show form errors
+    function showFormErrors(form, errors) {
+        const errorContainer = document.getElementById('formErrors');
+        errorContainer.classList.remove('d-none');
+        let errorMessages = [];
+        for (let field in errors) {
+            if (field === '__all__') {
+                errorMessages.push(...errors[field]);
+            } else {
+                const errorDiv = document.getElementById(`${field}-error`);
+                const input = document.getElementById(`id_${field}`);
+                if (errorDiv && input) {
+                    errorDiv.textContent = errors[field];
+                    input.classList.add('is-invalid');
+                    errorMessages.push(`${field}: ${errors[field]}`);
+                }
+            }
+        }
+        errorContainer.textContent = errorMessages.join('\n');
+    }
+
+    // Handle file input changes
+    function handleFileInputChange(inputId) {
+        const input = document.getElementById(inputId);
+        const label = input.previousElementSibling;
+
+        input.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                label.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>${this.files[0].name}`;
+                label.classList.add('text-success');
+                label.classList.remove('btn-outline-accent');
+                label.classList.add('btn-success');
+            } else {
+                label.innerHTML = `<i class="bi bi-upload me-2"></i>${inputId === 'id_image' ? 'Rasm' : 'Hujjat'} yuklash`;
+                label.classList.remove('text-success', 'btn-success');
+                label.classList.add('btn-outline-accent');
+            }
+        });
+    }
+
+    // Form submission handler
+    document.getElementById('truckAddForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Yuklanmoqda...';
+
+        // Clear previous errors
+        resetFormErrors(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => {
+                    closeFormSidebar();
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        window.location.reload();
+                    }
+                }, 1500);
+            } else {
+                if (data.errors) {
+                    showFormErrors(form, data.errors);
+                }
+                if (data.message) {
+                    const errorContainer = document.getElementById('formErrors');
+                    errorContainer.textContent = data.message;
+                    errorContainer.classList.remove('d-none');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', error.message || 'Noma\'lum xato yuz berdi. Iltimos, qayta urinib ko\'ring.');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-save me-1"></i>Saqlash';
+        });
+    });
+
+    // Initialize file inputs
+    document.addEventListener('DOMContentLoaded', () => {
+        handleFileInputChange('id_image');
+        handleFileInputChange('id_documents');
+    });
+</script>
