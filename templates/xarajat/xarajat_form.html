@@ -1,0 +1,58 @@
+<!-- templates/xarajat/xarajat_form.html -->
+<form method="post" enctype="multipart/form-data"
+      action="{% if action == 'add' %}{% url 'xarajat_add' %}{% else %}{% url 'xarajat_edit' xarajat_id %}{% endif %}"
+      class="ajax-form">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="{{ form.truck.id_for_label }}" class="form-label">Mashina</label>
+        {{ form.truck }}
+        <div id="{{ form.truck.id_for_label }}_error" class="invalid-feedback d-none"></div>
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.expense_type.id_for_label }}" class="form-label">Xarajat Turi</label>
+        {{ form.expense_type }}
+        <div id="{{ form.expense_type.id_for_label }}_error" class="invalid-feedback d-none"></div>
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.amount.id_for_label }}" class="form-label">Miqdor</label>
+        <div class="input-group">
+            <span class="input-group-text">$</span>
+            {{ form.amount }}
+        </div>
+        <div id="{{ form.amount.id_for_label }}_error" class="invalid-feedback d-none"></div>
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.date.id_for_label }}" class="form-label">Sana</label>
+        {{ form.date }}
+        <div id="{{ form.date.id_for_label }}_error" class="invalid-feedback d-none"></div>
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.description.id_for_label }}" class="form-label">Izoh</label>
+        {{ form.description }}
+        <div id="{{ form.description.id_for_label }}_error" class="invalid-feedback d-none"></div>
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.document.id_for_label }}" class="form-label">Hujjat</label>
+        {{ form.document }}
+        <div id="{{ form.document.id_for_label }}_error" class="invalid-feedback d-none"></div>
+        {% if action == 'edit' and form.instance.document %}
+        <div class="mt-2">
+            <a href="{{ form.instance.document.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                <i class="bi bi-file-earmark-text me-1"></i>Joriy hujjat
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" onclick="closeFormSidebar()" class="btn btn-outline-secondary">Bekor qilish</button>
+        <button type="submit" class="btn btn-primary">
+            {% if action == 'add' %}Qo'shish{% else %}Saqlash{% endif %}
+        </button>
+    </div>
+</form>

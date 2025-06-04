@@ -4,28 +4,28 @@ from trucks.models import Truck
 
 
 class Qarz(models.Model):
-    lender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_qarzlar', verbose_name="Qarz beruvchi")
-    borrower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='taken_qarzlar', verbose_name="Qarz oluvchi")
-    truck = models.ForeignKey(Truck, on_delete=models.SET_NULL, null=True, blank=True, related_name='qarzlar', verbose_name="Mashina")
-    amount = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Qarz miqdori")
-    remaining_amount = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Qoldiq miqdor")
-    given_date = models.DateField(verbose_name="Qarz berilgan sana", auto_now_add=True)
-    payment_due_date = models.DateField(verbose_name="To‘lov muddati", null=True, blank=True)
-    description = models.TextField(verbose_name="Izoh", blank=True, null=True)
-    is_paid = models.BooleanField(default=False, verbose_name="To‘langanmi?")
-    created_date = models.DateTimeField(auto_now_add=True, verbose_name="Yaratilgan sana")
-    updated_date = models.DateTimeField(auto_now=True, verbose_name="O‘zgartirilgan sana")
+    lender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_loans', verbose_name="Lender")
+    borrower_name = models.CharField(max_length=100, verbose_name="Borrower Name")
+    truck = models.ForeignKey(Truck, on_delete=models.SET_NULL, null=True, blank=True, related_name='loans', verbose_name="Truck")
+    amount = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Loan Amount")
+    remaining_amount = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Remaining Amount")
+    given_date = models.DateField(verbose_name="Loan Issued Date", auto_now_add=True)
+    payment_due_date = models.DateField(verbose_name="Payment Due Date", null=True, blank=True)
+    description = models.TextField(verbose_name="Description", blank=True, null=True)
+    is_paid = models.BooleanField(default=False, verbose_name="Is Paid?")
+    created_date = models.DateTimeField(auto_now_add=True, verbose_name="Created Date")
+    updated_date = models.DateTimeField(auto_now=True, verbose_name="Updated Date")
 
     def __str__(self):
-        return f"{self.lender.username} -> {self.borrower.username}: {self.amount} (Qoldiq: {self.remaining_amount})"
+        return f"{self.lender.username} -> {self.borrower_name}: ${self.amount} (Remaining: ${self.remaining_amount})"
 
     class Meta:
-        verbose_name = "Qarz"
-        verbose_name_plural = "Qarzlar"
+        verbose_name = "Loan"
+        verbose_name_plural = "Loans"
         ordering = ['-given_date']
 
     def save(self, *args, **kwargs):
-        if not self.pk:  # Yangi qarz yaratilganda
+        if not self.pk:  # When creating a new loan
             self.remaining_amount = self.amount
         if self.is_paid:
             self.remaining_amount = 0
@@ -42,17 +42,17 @@ class Qarz(models.Model):
 
 
 class Payment(models.Model):
-    qarz = models.ForeignKey(Qarz, on_delete=models.CASCADE, related_name='payments', verbose_name="Qarz")
-    amount = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="To‘lov miqdori")
-    payment_date = models.DateField(verbose_name="To‘lov sanasi", auto_now_add=True)
-    description = models.TextField(verbose_name="Izoh", blank=True, null=True)
+    qarz = models.ForeignKey(Qarz, on_delete=models.CASCADE, related_name='payments', verbose_name="Loan")
+    amount = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Payment Amount")
+    payment_date = models.DateField(verbose_name="Payment Date")
+    description = models.TextField(verbose_name="Description", blank=True, null=True)
 
     def __str__(self):
-        return f"{self.qarz} uchun {self.amount} to‘lov ({self.payment_date})"
+        return f"Payment of ${self.amount} for {self.qarz} ({self.payment_date})"
 
     class Meta:
-        verbose_name = "To‘lov"
-        verbose_name_plural = "To‘lovlar"
+        verbose_name = "Payment"
+        verbose_name_plural = "Payments"
         ordering = ['-payment_date']
 
     def save(self, *args, **kwargs):

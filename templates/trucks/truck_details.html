@@ -1,136 +1,290 @@
-{% load format_filters %}
-
-<div class="detail-content">
-    <div class="detail-header">
-        <h4>{{ truck.make }} {{ truck.model }} ({{ truck.year }})</h4>
-        <div class="price text-primary">${{ truck.price|format_number }}</div>
-    </div>
-    <div class="detail-section">
-        <div class="detail-row"><span>Horsepower (HP):</span><strong>{{ truck.horsepower }} HP</strong></div>
-        <div class="detail-row"><span>Location:</span><strong>{{ truck.location }}</strong></div>
-        <div class="detail-row"><span>Company:</span><strong>{{ truck.company|default:"Not Available" }}</strong></div>
-        <div class="detail-row"><span>Purchase Date:</span><strong>{{ truck.purchase_date|date:"Y-m-d" }}</strong></div>
-        <div class="detail-row"><span>Added Date:</span><strong>{{ truck.created_date|date:"Y-m-d H:i" }}</strong></div>
-        <div class="detail-row">
-            <span>Status:</span>
-            <strong class="{% if truck.sotilgan %}text-danger{% else %}text-success{% endif %}">
-                {{ truck.sotilgan|yesno:"Sold,Active" }}
-            </strong>
-        </div>
-    </div>
-    <div class="detail-section">
-        <h5><i class="bi bi-wallet2"></i> Expenses</h5>
-        <div class="detail-row"><span>Total Expenses:</span><strong class="text-warning">${{ xarajat_sum|format_number }}</strong></div>
-        <div class="detail-row"><span>Total Price:</span><strong class="text-success">${{ umumiy_narx|format_number }}</strong></div>
-    </div>
-    {% if truck.description %}
-    <div class="detail-section">
-        <h5><i class="bi bi-card-text"></i> Description</h5>
-        <div class="description">{{ truck.description }}</div>
-    </div>
-    {% endif %}
-    <div class="detail-section">
-        <h5><i class="bi bi-file-earmark-text"></i> Documents</h5>
-        <div class="documents">
-            {% if truck.documents %}
-            <a href="{{ truck.documents.url }}" target="_blank" class="doc-link">
-                <i class="bi bi-file-earmark-pdf"></i> Download
-            </a>
+<div class="modal-body" id="truckDetailContent">
+    <div class="truck-details-container">
+        <!-- Truck Image -->
+        <div class="detail-section">
+            <h5 class="section-title"><i class="bi bi-image me-2"></i>Rasm</h5>
+            {% if truck.image %}
+            <img src="{{ truck.image.url }}" alt="{{ truck.make }} {{ truck.model }}" class="truck-image img-fluid rounded">
             {% else %}
-            <span class="text-muted">Not Available</span>
+            <div class="no-image-placeholder text-center text-muted p-3 rounded bg-light">
+                <i class="bi bi-image fs-2 d-block mb-2"></i>
+                <p>Rasm mavjud emas</p>
+            </div>
             {% endif %}
         </div>
-    </div>
-    {% if truck.image %}
-    <div class="detail-section">
-        <h5><i class="bi bi-image"></i> Image</h5>
-        <img src="{{ truck.image.url }}" alt="{{ truck.make }} {{ truck.model }}" style="width: 100%; border-radius: 8px;">
-    </div>
-    {% endif %}
-    <div class="detail-section actions">
-        <button class="btn btn-accent" onclick="window.location.href='/truck/edit/{{ truck.id }}/'" aria-label="Edit">
-            <i class="bi bi-pencil"></i> Edit
-        </button>
-        <button class="btn btn-danger" onclick="confirmDelete({{ truck.id }}, '{{ truck.make }} {{ truck.model }}')" aria-label="Delete">
-            <i class="bi bi-trash"></i> Delete
-        </button>
+
+        <!-- Truck Info -->
+        <div class="detail-card bg-white rounded shadow-sm p-3 mb-3">
+            <div class="detail-header border-bottom pb-2 mb-3 d-flex flex-column flex-md-row justify-content-between">
+                <h4 class="truck-title mb-2 mb-md-0">{{ truck.make }} {{ truck.model }} ({{ truck.year }})</h4>
+                <div class="price text-primary fs-4 fw-bold">${{ truck.price|floatformat:"2"|default:"0.00" }}</div>
+            </div>
+            <div class="detail-section info-grid row g-2">
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">PO Raqami:</span>
+                        <strong>{{ truck.po_id|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Brend:</span>
+                        <strong>{{ truck.make|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Model:</span>
+                        <strong>{{ truck.model|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Yil:</span>
+                        <strong>{{ truck.year|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Ot kuchi:</span>
+                        <strong>{{ truck.horsepower|default:"-" }} HP</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Narx:</span>
+                        <strong>${{ truck.price|floatformat:"2"|default:"0.00" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Kompaniya:</span>
+                        <strong>{{ truck.company|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Joylashuv:</span>
+                        <strong>{{ truck.location|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Seriya Raqami:</span>
+                        <strong>{{ truck.seriya|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Foydalanuvchi:</span>
+                        <strong>{{ truck.user.username|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Sotib olingan sana:</span>
+                        <strong>{{ truck.purchase_date|date:"Y-m-d"|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Qo'shilgan sana:</span>
+                        <strong>{{ truck.created_date|date:"Y-m-d H:i"|default:"-" }}</strong>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Holat:</span>
+                        <strong class="badge {% if truck.sotilgan %}bg-danger{% else %}bg-success{% endif %}">
+                            {{ truck.sotilgan|yesno:"Sotilgan,Faol" }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expenses -->
+        <div class="detail-card bg-white rounded shadow-sm p-3 mb-3">
+            <h5 class="section-title d-flex align-items-center mb-3">
+                <i class="bi bi-wallet2 me-2"></i>Xarajatlar
+            </h5>
+            {% if xarajatlar %}
+            <div class="xarajat-list mb-3" style="max-height: 200px; overflow-y: auto;">
+                {% for xarajat in xarajatlar %}
+                <div class="xarajat-item d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-truncate pe-2">{{ xarajat.izoh|default:"Xarajat izohi yo'q" }}</span>
+                    <span class="text-nowrap">${{ xarajat.miqdor|floatformat:"2"|default:"0.00" }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Jami Xarajat:</span>
+                        <strong class="text-warning">${{ xarajat_sum|floatformat:"2"|default:"0.00" }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Umumiy Narx:</span>
+                        <strong class="text-success">${{ umumiy_narx|floatformat:"2"|default:"0.00" }}</strong>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-2">Xarajatlar mavjud emas.</p>
+            {% endif %}
+        </div>
+
+        <!-- Description -->
+        {% if truck.description %}
+        <div class="detail-card bg-white rounded shadow-sm p-3 mb-3">
+            <h5 class="section-title d-flex align-items-center mb-3">
+                <i class="bi bi-card-text me-2"></i>Tavsif
+            </h5>
+            <div class="description bg-light p-3 rounded">{{ truck.description }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Documents -->
+        <div class="detail-card bg-white rounded shadow-sm p-3 mb-3">
+            <h5 class="section-title d-flex align-items-center mb-3">
+                <i class="bi bi-files me-2"></i>Hujjatlar
+            </h5>
+            {% if hujjatlar %}
+            <div class="hujjat-list" style="max-height: 200px; overflow-y: auto;">
+                {% for hujjat in hujjatlar %}
+                <div class="hujjat-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <a href="{{ hujjat.hujjat_url }}" target="_blank" class="doc-link text-truncate pe-2">
+                        <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                        {{ hujjat.original_file_name }}
+                    </a>
+                    <button onclick="deleteHujjat({{ hujjat.id }}, {{ truck.id }})" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-2">Hujjatlar mavjud emas.</p>
+            {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="detail-actions d-flex flex-wrap gap-2 justify-content-center mt-4">
+            <button class="btn btn-primary" onclick="openEditTruckForm({{ truck.id }})">
+                <i class="bi bi-pencil me-1"></i> Tahrirlash
+            </button>
+            <button class="btn btn-danger" onclick="showDeleteConfirmation({{ truck.id }})">
+                <i class="bi bi-trash me-1"></i> O'chirish
+            </button>
+        </div>
     </div>
 </div>
 
 <style>
-    .detail-header {
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid #e0e0e0;
+/* Asosiy container */
+.truck-details-container {
+    padding: 0.5rem;
+}
+
+/* Section umumiy stillari */
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+/* Rasm qismi */
+.truck-image {
+    max-width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
+}
+
+.no-image-placeholder {
+    padding: 2rem;
+    border: 1px dashed #ddd;
+    border-radius: 8px;
+}
+
+/* Kartochkalar uchun umumiy stillar */
+.detail-card {
+    margin-bottom: 1.5rem;
+}
+
+/* Narx ko'rsatkichi */
+.price {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Ma'lumotlar qatori */
+.detail-row {
+    padding: 0.5rem 0;
+}
+
+/* Hujjatlar va xarajatlar ro'yxati */
+.hujjat-list, .xarajat-list {
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 0.5rem;
+}
+
+/* Tavsif qismi */
+.description {
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+/* Harakatlar tugmalari */
+.detail-actions .btn {
+    min-width: 120px;
+}
+
+/* Mobil versiya uchun moslashuvchanlik */
+@media (max-width: 768px) {
+    .truck-details-container {
+        padding: 0;
     }
 
-    .detail-section {
-        margin-bottom: 1.5rem;
+    .truck-image {
+        max-height: 200px;
     }
 
-    .detail-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.75rem 0;
-        border-bottom: 1px solid #f0f0f0;
+    .price {
+        font-size: 1.3rem;
     }
 
-    .description {
-        padding: 0.5rem;
-        background: #f8f9fa;
-        border-radius: 6px;
-        line-height: 1.6;
+    .section-title {
+        font-size: 1rem;
     }
 
-    .actions {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 1rem;
-    }
-
-    .btn-accent {
-        background-color: var(--accent-color);
-        color: white;
-    }
-
-    .btn-accent:hover {
-        background-color: #16a085;
-    }
-
-    .btn-danger {
-        background-color: #e74c3c;
-        color: white;
-    }
-
-    .btn-danger:hover {
-        background-color: #c0392b;
-    }
-</style>
-
-<script>
-function confirmDelete(truckId, truckName) {
-    if (confirm(`Are you sure you want to delete "${truckName}"? This action cannot be undone!`)) {
-        fetch(`/delete-truck/${truckId}/`, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeDetailSidebar();
-                showAlert('success', data.message);
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                showAlert('error', 'An error occurred while deleting: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('error', 'An error occurred');
-        });
+    .detail-actions .btn {
+        flex: 1;
+        min-width: auto;
     }
 }
-</script>
+
+@media (max-width: 576px) {
+    .info-grid .col-md-6 {
+        width: 100%;
+    }
+
+    .truck-title {
+        font-size: 1.2rem;
+    }
+
+    .detail-actions {
+        flex-direction: column;
+    }
+
+    .detail-actions .btn {
+        width: 100%;
+    }
+}
+</style>

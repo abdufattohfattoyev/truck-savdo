@@ -1,5 +1,6 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -292,38 +293,38 @@
                 <i class="bi bi-person-circle"></i> {{ user.username }}
             </div>
             <a href="{% url 'dashboard' %}" {% if request.path == '/' %}class="active"{% endif %}>
-                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                <i class="bi bi-speedometer2 me-2"></i> Boshqaruv paneli
             </a>
-            <a href="{% url 'truck_list' %}" {% if request.path == '/truck-list/' %}class="active"{% endif %}>
-                <i class="bi bi-truck me-2"></i> Trucks
+            <a href="{% url 'trucks_list' %}" {% if request.path == '/truck-list/' %}class="active"{% endif %}>
+                <i class="bi bi-truck me-2"></i> Yuk mashinalari
             </a>
             <a href="{% url 'xarajatlar_list' %}" {% if request.path == '/xarajatlar/' %}class="active"{% endif %}>
-                <i class="bi bi-wallet2 me-2"></i> Expenses
+                <i class="bi bi-wallet2 me-2"></i> Xarajatlar
             </a>
             <a href="{% url 'xaridorlar_list' %}" {% if request.path == '/xaridorlar/' %}class="active"{% endif %}>
-                <i class="bi bi-person-lines-fill me-2"></i> Customers
+                <i class="bi bi-person-lines-fill me-2"></i> Xaridorlar
             </a>
             {% if user.is_superuser %}
                 <a href="{% url 'user_list' %}" {% if request.path == '/users/' %}class="active"{% endif %}>
-                    <i class="bi bi-people me-2"></i> Users
+                    <i class="bi bi-people me-2"></i> Foydalanuvchilar
                 </a>
             {% endif %}
             <a href="{% url 'qarz_view' %}" {% if request.path|slice:":6" == '/qarz/' %}class="active"{% endif %}>
-                <i class="bi bi-cash-coin me-2"></i> Debts-Partners
+                <i class="bi bi-cash-coin me-2"></i> Qarzlar va Hamkorlar
             </a>
             <a href="{% url 'chiqim_list' %}" {% if request.path == '/chiqim/chiqim/' %}class="active"{% endif %}>
-                <i class="bi bi-arrow-up-circle me-2"></i> Expenditure
+                <i class="bi bi-arrow-up-circle me-2"></i> Chiqimlar
             </a>
             <a href="{% url 'bildirishnomalar' %}" {% if request.path == '/chiqim/bildirishnoma_list/' %}class="active"{% endif %}>
-                <i class="bi bi-bell me-2"></i> Notifications
+                <i class="bi bi-bell me-2"></i> Bildirishnomalar
                 <span class="notification-badge" id="notificationBadge">{{ notification_count }}</span>
             </a>
             <a href="{% url 'logout' %}" class="mt-5">
-                <i class="bi bi-box-arrow-right me-2"></i> Log Out
+                <i class="bi bi-box-arrow-right me-2"></i> Chiqish
             </a>
         {% else %}
             <a href="{% url 'login' %}">
-                <i class="bi bi-box-arrow-in-right me-2"></i> Log In
+                <i class="bi bi-box-arrow-in-right me-2"></i> Kirish
             </a>
         {% endif %}
     </div>
@@ -347,14 +348,14 @@
     </div>
     <div class="form-sidebar" id="formSidebar">
         <div class="form-sidebar-header">
-            <h5 id="formSidebarTitle">Form</h5>
+            <h5 id="formSidebarTitle">Forma</h5>
             <button type="button" class="btn-close" id="closeFormSidebar" aria-label="Close"></button>
         </div>
         <div class="form-sidebar-body" id="formSidebarContent"></div>
     </div>
     <div class="detail-sidebar" id="detailSidebar">
         <div class="detail-sidebar-header">
-            <h5 id="detailSidebarTitle">Detailed Information</h5>
+            <h5 id="detailSidebarTitle">Batafsil ma'lumot</h5>
             <button type="button" class="btn-close" id="closeDetailSidebar" aria-label="Close"></button>
         </div>
         <div class="detail-content" id="detailContent"></div>
@@ -522,7 +523,7 @@
                 }
             } catch (error) {
                 console.error('Error loading form:', error);
-                window.showAlert('error', 'An error occurred while loading the form');
+                window.showAlert('error', 'Formani yuklashda xatolik yuz berdi');
             }
         };
 
@@ -564,7 +565,7 @@
                 }
             } catch (error) {
                 console.error('Error loading details:', error);
-                window.showAlert('error', 'An error occurred while loading details');
+                window.showAlert('error', 'Ma\'lumotlarni yuklashda xatolik yuz berdi');
             }
         };
 
@@ -604,7 +605,7 @@
 
                 if (submitBtn) {
                     submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Yuborilmoqda...';
                 }
 
                 // Clear previous errors
@@ -625,7 +626,7 @@
                     });
                     const data = await response.json();
                     if (data.success) {
-                        window.showAlert('success', data.message || 'Successfully saved');
+                        window.showAlert('success', data.message || 'Muvaffaqiyatli saqlandi');
                         if (data.redirect) {
                             window.location.href = data.redirect;
                         } else if (data.reload) {
@@ -650,29 +651,22 @@
                                 }
                             }
                         } else {
-                            errorContainer.innerHTML = data.error || 'An error occurred';
+                            errorContainer.innerHTML = data.error || 'Xatolik yuz berdi';
                             errorContainer.classList.remove('d-none');
                         }
                     }
                 } catch (error) {
                     console.error('Error submitting form:', error);
-                    errorContainer.innerHTML = 'An error occurred while submitting the form';
+                    errorContainer.innerHTML = 'Formani yuborishda xatolik yuz berdi';
                     errorContainer.classList.remove('d-none');
                 } finally {
                     if (submitBtn) {
                         submitBtn.disabled = false;
-                        submitBtn.innerHTML = submitBtn.dataset.originalText || 'Save';
+                        submitBtn.innerHTML = submitBtn.dataset.originalText || 'Saqlash';
                     }
                 }
             }
         });
-
-        // Delete confirmation handler
-        window.confirmDelete = (url, itemName) => {
-            if (confirm(`Are you sure you want to delete "${itemName}"?`)) {
-                deleteItem(url);
-            }
-        };
 
         // Delete item function
         async function deleteItem(url) {
@@ -683,7 +677,7 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    window.showAlert('success', data.message || 'Successfully deleted');
+                    window.showAlert('success', data.message || 'Muvaffaqiyatli o\'chirildi');
                     if (data.redirect) {
                         window.location.href = data.redirect;
                     } else if (data.reload) {
@@ -692,11 +686,11 @@
                         setTimeout(() => window.location.reload(), 500);
                     }
                 } else {
-                    window.showAlert('error', data.message || 'An error occurred while deleting');
+                    window.showAlert('error', data.message || 'O\'chirishda xatolik yuz berdi');
                 }
             } catch (error) {
                 console.error('Error deleting item:', error);
-                window.showAlert('error', 'An error occurred while deleting');
+                window.showAlert('error', 'O\'chirishda xatolik yuz berdi');
             }
         }
 
@@ -724,7 +718,7 @@
 
             // Initialize notifications
             updateNotificationBadge();
-            setInterval(updateNotificationBadge, 60000); // Update every 60 seconds
+            setInterval(updateNotificationBadge, 3200000); // Update every 60 seconds
         });
 
         // Handle history navigation (back/forward buttons)

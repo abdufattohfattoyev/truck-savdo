@@ -12,9 +12,10 @@
         <div class="card"><h3>Vehicle</h3><p class="value">{{ chiqim.truck.make }} {{ chiqim.truck.model|default:"N/A" }}</p></div>
         <div class="card"><h3>Customer</h3><p class="value">{{ chiqim.xaridor.ism_familiya|default:"N/A" }}</p><p class="value">Phone: {{ chiqim.xaridor.telefon_raqam|default:"No phone" }}</p></div>
         <div class="card"><h3>Total Price</h3><p class="value">${{ chiqim.narx|floatformat:2 }}</p></div>
-        <div class="card"><h3>Initial Payment</h3><p class="value">${{ chiqim.tolangan_summa|floatformat:2 }}</p></div>
-        <div class="card"><h3>Total Paid Amount</h3><p class="value">${{ total_paid|floatformat:2 }}</p></div>
-        <div class="card redor
+        <div class="card"><h3>Initial Payment (Planned)</h3><p class="value">${{ chiqim.boshlangich_summa|floatformat:2 }}</p></div>
+        <div class="card"><h3>Initial Paid Amount</h3><p class="value">${{ total_boshlangich_paid|floatformat:2 }}</p></div>
+        <div class="card"><h3>Initial Remaining</h3><p class="value" id="initial-remaining">${{ boshlangich_qoldiq|floatformat:2 }}</p></div>
+        <div class="card"><h3>Total Monthly Paid</h3><p class="value">${{ total_monthly_paid|floatformat:2 }}</p></div>
         <div class="card"><h3>Remaining Balance</h3><p class="value">${{ remaining_debt|floatformat:2 }}</p></div>
         <div class="card"><h3>Debt Percentage</h3><p class="value">{{ payment_schedule.0.debt_percentage|floatformat:2 }}%</p></div>
         <div class="card"><h3>Payment Term</h3><p class="value">{{ chiqim.bo_lib_tolov_muddat }} months</p></div>
@@ -59,30 +60,83 @@
         {% endif %}
     </section>
     <section class="payment-history-section mt-5">
-        <div class="page-header"><h2 class="section-title">Payment History</h2><button class="btn-add" onclick="openAddPaymentForm({{ chiqim.id }})"><i class="bi bi-cash-coin"></i> Add Payment</button></div>
-        {% if chiqim.tolovlar.exists %}
+        <div class="page-header">
+            <h2 class="section-title">Payment History</h2>
+            <div class="action-buttons">
+                <button class="btn-add btn-boshlangich" id="add-initial-payment-btn" style="display: {% if boshlangich_qoldiq <= 0 %}none{% else %}block{% endif %};" onclick="openAddBoshlangichPaymentForm({{ chiqim.id }})">
+                    <i class="bi bi-wallet2"></i> Add Initial Payment
+                </button>
+                <button class="btn-add" onclick="openAddPaymentForm({{ chiqim.id }})">
+                    <i class="bi bi-cash-coin"></i> Add Monthly Payment
+                </button>
+            </div>
+        </div>
+        {% if chiqim.boshlangich_tolovlar.exists or chiqim.tolovlar.exists %}
         <div class="table-responsive">
             <table class="data-table">
-                <thead><tr><th>Date</th><th>Amount</th><th>Payment Type</th><th>Customer</th><th>Actions</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Payment Type</th>
+                        <th>Customer</th>
+                        <th>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
                 <tbody>
+                    {% for tolov in chiqim.boshlangich_tolovlar.all %}
+                    <tr data-id="{{ tolov.id }}" data-type="boshlangich">
+                        <td>{{ tolov.sana|date:"Y-m-d" }}</td>
+                        <td>${{ tolov.summa|floatformat:2 }}</td>
+                        <td>{{ tolov.get_tolov_turi_display }}</td>
+                        <td>{{ tolov.xaridor.ism_familiya }}</td>
+                        <td>Initial Payment</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-action btn-edit" onclick="openEditBoshlangichPaymentForm({{ tolov.id }})">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button class="btn-action btn-delete" onclick="openDeleteBoshlangichPaymentForm({{ tolov.id }})">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
                     {% for tolov in chiqim.tolovlar.all %}
-                    <tr data-id="{{ tolov.id }}"><td>{{ tolov.sana|date:"Y-m-d" }}</td><td>${{ tolov.summa|floatformat:2 }}</td><td>{{ tolov.get_tolov_turi_display }}</td><td>{{ tolov.xaridor.ism_familiya }}</td>
-                        <td><div class="action-buttons"><button class="btn-action btn-edit" onclick="openEditPaymentForm({{ tolov.id }})"><i class="bi bi-pencil"></i> Edit</button>
-                            <button class="btn-action btn-delete" onclick="openDeletePaymentForm({{ tolov.id }})"><i class="bi bi-trash"></i> Delete</button></div></td>
+                    <tr data-id="{{ tolov.id }}" data-type="monthly">
+                        <td>{{ tolov.sana|date:"Y-m-d" }}</td>
+                        <td>${{ tolov.summa|floatformat:2 }}</td>
+                        <td>{{ tolov.get_tolov_turi_display }}</td>
+                        <td>{{ tolov.xaridor.ism_familiya }}</td>
+                        <td>Monthly Payment</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-action btn-edit" onclick="openEditPaymentForm({{ tolov.id }})">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button class="btn-action btn-delete" onclick="openDeletePaymentForm({{ tolov.id }})">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="empty-state"><i class="bi bi-exclamation-circle"></i><p>No payments available yet.</p></div>
+        <div class="empty-state">
+            <i class="bi bi-exclamation-circle"></i>
+            <p>No payments available yet.</p>
+        </div>
         {% endif %}
     </section>
     <div class="action-section mt-5">
         <div class="action-buttons">
             <button class="btn-action btn-edit" onclick="openEditChiqimForm({{ chiqim.id }})"><i class="bi bi-pencil"></i> Edit</button>
             <button class="btn-action btn-delete" onclick="openDeleteChiqimForm({{ chiqim.id }})"><i class="bi bi-trash"></i> Delete</button>
-            <button class="btn-action btn-payment" onclick="openAddPaymentForm({{ chiqim.id }})"><i class="bi bi-cash-coin"></i> Payment</button>
         </div>
     </div>
 </div>
@@ -94,6 +148,8 @@
         const searchInput = document.getElementById('searchInput');
         const filterStatus = document.getElementById('filterStatus');
         const tableBody = document.getElementById('paymentTableBody');
+        const addInitialButton = document.getElementById('add-initial-payment-btn');
+        const initialRemaining = document.getElementById('initial-remaining');
 
         function filterTable() {
             const searchTerm = searchInput.value.toLowerCase().trim();
@@ -107,6 +163,7 @@
                 row.style.display = matchesSearch && matchesStatus ? '' : 'none';
             });
         }
+
         searchInput.addEventListener('input', filterTable);
         filterStatus.addEventListener('change', filterTable);
 
@@ -117,7 +174,22 @@
             });
         }
 
-        async function submitForm(formId, url, successMessage) {
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        async function submitForm(formId, url, successMessage, callback = () => {}) {
             const form = document.getElementById(formId);
             if (form) {
                 form.addEventListener('submit', async (e) => {
@@ -125,12 +197,17 @@
                     clearErrors();
                     const formData = new FormData(form);
                     try {
-                        const response = await fetch(url, { method: 'POST', body: formData, headers: { 'X-CSRFToken': getCookie('csrftoken') } });
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                        });
                         const data = await response.json();
                         if (data.success) {
                             showAlert('success', successMessage);
                             closeFormSidebar();
-                            setTimeout(() => location.reload(), 1500);
+                            callback(data); // Callback chaqirish
+                            setTimeout(() => location.reload(), 1500); // Sahifani yangilash
                         } else {
                             displayErrors(data.errors || { '__all__': ['An error occurred'] });
                         }
@@ -142,6 +219,54 @@
             }
         }
 
+        function openFormSidebar(url, title) {
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    const sidebar = document.getElementById('formSidebar');
+                    if (sidebar) {
+                        sidebar.innerHTML = html;
+                        sidebar.classList.add('active');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading form:', error);
+                    showAlert('error', 'Error loading form');
+                });
+        }
+
+        function closeFormSidebar() {
+            const sidebar = document.getElementById('formSidebar');
+            if (sidebar) {
+                sidebar.classList.remove('active');
+                sidebar.innerHTML = '';
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 3000);
+        }
+
+        function displayErrors(errors) {
+            for (const [field, messages] of Object.entries(errors)) {
+                const input = document.querySelector(`#id_${field}`);
+                if (input) {
+                    input.classList.add('is-invalid');
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback';
+                    errorDiv.textContent = messages.join(', ');
+                    input.parentNode.appendChild(errorDiv);
+                } else {
+                    showAlert('error', messages.join(', '));
+                }
+            }
+        }
+
+        // Existing form handlers
         window.openEditChiqimForm = (id) => {
             openFormSidebar(`/chiqim/edit/${id}/`, "Edit Expense");
             setTimeout(() => submitForm('chiqimForm', `/chiqim/edit/${id}/`, "Expense successfully updated!"), 300);
@@ -151,16 +276,60 @@
             setTimeout(() => submitForm('chiqimDeleteForm', `/chiqim/delete/${id}/`, "Expense successfully deleted!"), 300);
         };
         window.openAddPaymentForm = (chiqimId) => {
-            openFormSidebar(`/chiqim/payment/add/${chiqimId}/`, "Add Payment");
-            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/add/${chiqimId}/`, "Payment successfully added!"), 300);
+            openFormSidebar(`/chiqim/payment/add/${chiqimId}/`, "Add Monthly Payment");
+            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/add/${chiqimId}/`, "Monthly payment successfully added!"), 300);
         };
         window.openEditPaymentForm = (tolovId) => {
-            openFormSidebar(`/chiqim/payment/edit/${tolovId}/`, "Edit Payment");
-            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/edit/${tolovId}/`, "Payment successfully updated!"), 300);
+            openFormSidebar(`/chiqim/payment/edit/${tolovId}/`, "Edit Monthly Payment");
+            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/edit/${tolovId}/`, "Monthly payment successfully updated!"), 300);
         };
         window.openDeletePaymentForm = (tolovId) => {
-            openFormSidebar(`/chiqim/payment/delete/${tolovId}/`, "Delete Payment");
-            setTimeout(() => submitForm('tolovDeleteForm', `/chiqim/payment/delete/${tolovId}/`, "Payment successfully deleted!"), 300);
+            openFormSidebar(`/chiqim/payment/delete/${tolovId}/`, "Delete Monthly Payment");
+            setTimeout(() => submitForm('tolovDeleteForm', `/chiqim/payment/delete/${tolovId}/`, "Monthly payment successfully deleted!"), 300);
+        };
+
+        // Initial payment handlers
+        window.openAddBoshlangichPaymentForm = (chiqimId) => {
+            openFormSidebar(`/chiqim/boshlangich_payment/add/${chiqimId}/`, "Add Initial Payment");
+            setTimeout(() => submitForm('boshlangichTolovForm', `/chiqim/boshlangich_payment/add/${chiqimId}/`, "Initial payment successfully added!", (data) => {
+                if (data.success) {
+                    initialRemaining.textContent = `$${data.boshlangich_qoldiq.toFixed(2)}`;
+                    if (data.boshlangich_qoldiq <= 0) {
+                        addInitialButton.style.display = 'none';
+                    }
+                }
+            }), 300);
+        };
+
+        window.openEditBoshlangichPaymentForm = (tolovId) => {
+            openFormSidebar(`/chiqim/boshlangich_payment/edit/${tolovId}/`, "Edit Initial Payment");
+            setTimeout(() => submitForm('boshlangichTolovForm', `/chiqim/boshlangich_payment/edit/${tolovId}/`, "Initial payment successfully updated!", (data) => {
+                if (data.success) {
+                    initialRemaining.textContent = `$${data.boshlangich_qoldiq.toFixed(2)}`;
+                    if (data.boshlangich_qoldiq > 0) {
+                        addInitialButton.style.display = 'block';
+                    } else {
+                        addInitialButton.style.display = 'none';
+                    }
+                    // Payment history jadvalini yangilash
+                    const row = document.querySelector(`tr[data-id="${tolovId}"][data-type="boshlangich"] td:nth-child(2)`);
+                    if (row) {
+                        row.textContent = `$${data.tolov_summa.toFixed(2)}`; // `tolov_summa` ni serverdan qaytarish kerak
+                    }
+                }
+            }), 300);
+        };
+
+        window.openDeleteBoshlangichPaymentForm = (tolovId) => {
+            openFormSidebar(`/chiqim/boshlangich_payment/delete/${tolovId}/`, "Delete Initial Payment");
+            setTimeout(() => submitForm('boshlangichTolovDeleteForm', `/chiqim/boshlangich_payment/delete/${tolovId}/`, "Initial payment successfully deleted!", (data) => {
+                if (data.success) {
+                    initialRemaining.textContent = `$${data.boshlangich_qoldiq.toFixed(2)}`;
+                    if (data.boshlangich_qoldiq > 0) {
+                        addInitialButton.style.display = 'block';
+                    }
+                }
+            }), 300);
         };
     });
 </script>
@@ -168,15 +337,30 @@
 
 {% block extra_css %}
 <style>
-    :root { --primary: #4361ee; --secondary: #3f37c9; --accent: #4895ef; --danger: #f72585; --success: #4cc9f0; --dark: #212529; --light: #f8f9fa; --shadow-sm: 0 1px 3px rgba(0,0,0,0.12); --shadow-md: 0 4px 6px rgba(0,0,0,0.1); --radius-sm: 0.25rem; --radius-md: 0.5rem; --transition: all 0.3s ease; }
+    :root {
+        --primary: #4361ee;
+        --secondary: #3f37c9;
+        --accent: #4895ef;
+        --danger: #f72585;
+        --success: #4cc9f0;
+        --dark: #212529;
+        --light: #f8f9fa;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+        --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+        --radius-sm: 0.25rem;
+        --radius-md: 0.5rem;
+        --transition: all 0.3s ease;
+    }
     .container-xl { max-width: 1400px; padding: 2rem 1rem; margin: 0 auto; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
     .page-title, .section-title { color: var(--dark); font-weight: 600; margin: 0; }
     .btn { border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-sm); font-weight: 500; transition: var(--transition); display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
     .btn-secondary { background-color: #6c757d; color: white; }
     .btn-secondary:hover { background-color: #5a6268; box-shadow: var(--shadow-sm); }
-    .btn-add { background-color: var(--accent); color: white; }
-    .btn-add:hover { background-color: var(--secondary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .btn-add, .btn-boshlangich { background-color: var(--accent); color: white; }
+    .btn-add:hover, .btn-boshlangich:hover { background-color: var(--secondary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .btn-boshlangich { background-color: #17a2b8; }
+    .btn-boshlangich:hover { background-color: #138496; }
     .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .card { background: white; border: 1px solid #e0e0e0; border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-sm); transition: var(--transition); }
     .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
@@ -204,14 +388,23 @@
     .btn-edit:hover { background: var(--secondary); box-shadow: var(--shadow-sm); }
     .btn-delete { background: var(--danger); color: white; }
     .btn-delete:hover { background: #d1145a; box-shadow: var(--shadow-sm); }
-    .btn-payment { background: var(--success); color: white; }
-    .btn-payment:hover { background: #3ab4d9; box-shadow: var(--shadow-sm); }
     .action-section { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
     .empty-state { text-align: center; padding: 2rem; background: white; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
     .empty-state i { font-size: 2.5rem; color: #adb5bd; margin-bottom: 1rem; }
     .empty-state p { color: #6c757d; font-size: 1rem; }
     @media (max-width: 992px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } .data-table th, .data-table td { padding: 0.75rem; } }
-    @media (max-width: 768px) { .container-xl { padding: 1.5rem 1rem; } .card-grid { grid-template-columns: 1fr; } .filter-section { flex-direction: column; } .search-input, .filter-select { width: 100%; } .data-table { display: block; overflow-x: auto; white-space: nowrap; } .action-buttons { flex-direction: column; } .btn-action { width: 100%; justify-content: center; } }
-    @media (max-width: 576px) { .page-header { flex-direction: column; align-items: flex-start; } .data-table th, .data-table td { font-size: 0.875rem; padding: 0.5rem; } }
+    @media (max-width: 768px) {
+        .container-xl { padding: 1.5rem 1rem; }
+        .card-grid { grid-template-columns: 1fr; }
+        .filter-section { flex-direction: column; }
+        .search-input, .filter-select { width: 100%; }
+        .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+        .action-buttons { flex-direction: column; }
+        .btn-action, .btn-add, .btn-boshlangich { width: 100%; justify-content: center; }
+    }
+    @media (max-width: 576px) {
+        .page-header { flex-direction: column; align-items: flex-start; }
+        .data-table th, .data-table td { font-size: 0.875rem; padding: 0.5rem; }
+    }
 </style>
 {% endblock %}

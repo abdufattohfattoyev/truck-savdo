@@ -369,7 +369,7 @@
                     {% if page_obj.has_previous %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if sana %}&sana={{ sana }}{% endif %}" aria-label="Oldingi">
-                            <span aria-hidden="true">&laquo;</span>
+                            <span aria-hidden="true">«</span>
                         </a>
                     </li>
                     {% endif %}
@@ -385,7 +385,7 @@
                     {% if page_obj.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if sana %}&sana={{ sana }}{% endif %}" aria-label="Keyingi">
-                            <span aria-hidden="true">&raquo;</span>
+                            <span aria-hidden="true">»</span>
                         </a>
                     </li>
                     {% endif %}
@@ -396,6 +396,7 @@
     </div>
 </div>
 
+<!-- xaridorlar_list.html ichidagi <script> qismi -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Avval barcha hujjatlar bo'limlarini yopish
@@ -412,21 +413,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const xaridorId = this.getAttribute('data-xaridor-id');
             const section = document.getElementById(`hujjatlar-section-${xaridorId}`);
 
-            // Agar bo'lim allaqachon ochiq bo'lsa, yopish
             if (section.classList.contains('active')) {
                 section.classList.remove('active');
                 return;
             }
 
-            // Barcha boshqa hujjatlar bo'limlarini yopish
             document.querySelectorAll('.hujjatlar-section').forEach(sec => {
                 sec.classList.remove('active');
             });
 
-            // Faqat tanlangan bo'limni ochish
             section.classList.add('active');
 
-            // Agar bo'lim ochiq bo'lsa, unga scroll qilish
             if (section.classList.contains('active')) {
                 setTimeout(() => {
                     section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -462,7 +459,6 @@ document.addEventListener('DOMContentLoaded', function() {
             container.appendChild(newInputGroup);
             bindUploadEvents();
 
-            // Yangi inputga fokus qilish
             setTimeout(() => {
                 const input = document.getElementById(`hujjat-${xaridorId}-${count}`);
                 if (input) input.focus();
@@ -478,6 +474,26 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (group) {
             showAlert('warning', "Kamida bitta hujjat maydoni bo'lishi shart!");
         }
+    }
+
+    // CSRF token olish
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    console.log(`CSRF token topildi: ${cookieValue}`);
+                    break;
+                }
+            }
+        }
+        if (!cookieValue) {
+            console.error(`CSRF token topilmadi: ${name}`);
+        }
+        return cookieValue;
     }
 
     // Fayl yuklash
@@ -519,9 +535,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const formData = new FormData();
                 formData.append('hujjat', input.files[0]);
                 formData.append('xaridor_id', xaridorId);
-                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
 
-                // Yuklash animatsiyasi
                 const originalText = this.innerHTML;
                 this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Yuklanmoqda...';
                 this.disabled = true;
@@ -539,21 +554,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         showAlert('success', data.message);
                         input.value = '';
 
-                        // Hujjatlar yacheykasini yangilash
                         const cell = document.querySelector(`td[data-xaridor-id="${xaridorId}"]`);
                         if (cell) {
                             cell.innerHTML = `
                                 <div class="d-flex flex-column">
-                                    <button class="btn btn-sm btn-info detail-open-btn mb-1" data-url="/xaridorlar/passport/${xaridorId}/" data-title="Hujjatlar">
+                                    {% if xaridor.hujjatlar.exists %}
+                                    <button class="btn btn-sm btn-info detail-open-btn mb-1" data-url="{% url 'view_passport' xaridor.id %}" data-title="{{ xaridor.ism_familiya }} - Hujjatlar">
                                         <i class="bi bi-eye"></i> Ko'rish
                                     </button>
+                                    {% endif %}
                                     <button class="btn btn-sm btn-primary toggle-hujjat-btn" data-xaridor-id="${xaridorId}">
                                         <i class="bi bi-file-earmark-plus"></i> Qo'shish
                                     </button>
                                 </div>
                             `;
 
-                            // Yangi toggle tugmasiga hodisa qo'shish
                             cell.querySelector('.toggle-hujjat-btn').addEventListener('click', function() {
                                 const section = document.getElementById(`hujjatlar-section-${xaridorId}`);
                                 section.classList.toggle('active');
@@ -590,7 +605,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Alert funksiyasi
     function showAlert(type, message) {
-        // Avvalgi alertlarni o'chirish
         document.querySelectorAll('.custom-alert').forEach(el => el.remove());
 
         const alertDiv = document.createElement('div');
@@ -608,7 +622,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.body.appendChild(alertDiv);
 
-        // 5 soniyadan keyin avtomatik yopilishi
         setTimeout(() => {
             alertDiv.classList.remove('show');
             setTimeout(() => alertDiv.remove(), 150);

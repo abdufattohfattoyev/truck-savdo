@@ -1,0 +1,9 @@
+{% load i18n %}
+<form id="boshlangichTolovDeleteForm" method="POST" class="p-4">
+    {% csrf_token %}
+    <p>{% trans "Haqiqatan ham ushbu boshlang'ich to'lovni o'chirishni xohlaysizmi?" %}</p>
+    <p><strong>{% trans "Summa" %}</strong>: ${{ tolov.summa|floatformat:2 }}</p>
+    <p><strong>{% trans "Sana" %}</strong>: {{ tolov.sana|date:"Y-m-d" }}</p>
+    <button type="submit" class="btn btn-danger">{% trans "O'chirish" %}</button>
+    <button type="button" class="btn btn-secondary" onclick="closeFormSidebar()">{% trans "Bekor qilish" %}</button>
+</form>

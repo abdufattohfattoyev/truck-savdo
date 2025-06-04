@@ -11,6 +11,9 @@ urlpatterns = [
     path('users/delete/<int:user_id>/', views.delete_user, name='delete_user'),
     path('add-truck/', views.add_truck, name='add_truck'),
     path('truck/edit/<int:truck_id>/', views.edit_truck, name='edit_truck'),
-    path('delete-truck/<int:truck_id>/', views.delete_truck, name='delete_truck'),
-    path('truck-list/', views.trucks_list, name='truck_list'),
+    path('truck/delete/<int:truck_id>/', views.delete_truck, name='delete_truck'),
+    path('truck-list/', views.trucks_list, name='trucks_list'),
+    path('truck/detail/<int:truck_id>/', views.truck_detail, name='truck_detail'),
+    path('truck/upload-hujjat/', views.upload_hujjat, name='upload_hujjat'),
+    path('truck/hujjat/delete/<int:hujjat_id>/', views.delete_hujjat, name='delete_hujjat'),
 ]
