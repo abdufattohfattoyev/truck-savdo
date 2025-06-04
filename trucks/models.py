@@ -104,10 +104,16 @@ class TruckHujjat(models.Model):
         ],
         verbose_name="Hujjat fayli"
     )
+    original_file_name = models.CharField(
+        max_length=255,
+        verbose_name="Asl fayl nomi",
+        blank=True,
+        null=True
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Yuklangan sana")
 
     def __str__(self):
-        return f"{self.truck.po_id} - {os.path.basename(self.hujjat.name)}"
+        return f"{self.truck.po_id} - {self.original_file_name or os.path.basename(self.hujjat.name)}"
 
     class Meta:
         verbose_name = "Yuk mashinasi hujjati"

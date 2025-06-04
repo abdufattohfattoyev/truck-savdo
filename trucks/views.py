@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, F
 from django.shortcuts import render, redirect, get_object_or_404
@@ -9,6 +10,8 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.db import transaction
+from django.views.decorators.http import require_POST
+
 from chiqim.models import Chiqim
 from xarajatlar.models import Xarajat
 from .models import Truck, TruckHujjat
@@ -220,27 +223,51 @@ def add_truck(request):
     return render(request, 'add_truck_form.html', {'form': form})
 
 
+require_POST
 @login_required
 def upload_hujjat(request):
-    if request.method == 'POST':
-        truck_id = request.POST.get('truck_id')
-        truck = get_object_or_404(Truck, id=truck_id)
-        if truck.user != request.user and not request.user.is_superuser:
-            return JsonResponse(
-                {'success': False, 'message': "Sizda ushbu yuk mashinasiga hujjat qo'shish huquqi yo'q!"})
-        files = request.FILES.getlist('hujjat')
-        if not files:
-            return JsonResponse({'success': False, 'message': "Iltimos, kamida bitta fayl tanlang!"})
-        hujjatlar = []
-        with transaction.atomic():
-            for file in files:
+    if not request.FILES:
+        return JsonResponse({
+            'success': False,
+            'message': 'Iltimos, kamida bitta fayl tanlang!'
+        }, status=400)
+
+    truck_id = request.POST.get('truck_id')
+    try:
+        truck = Truck.objects.get(id=truck_id)
+    except Truck.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Yuk mashinasi topilmadi!'
+        }, status=404)
+
+    # Check permissions
+    if truck.user != request.user and not request.user.is_superuser:
+        raise PermissionDenied("Sizda ushbu yuk mashinasiga hujjat qo'shish huquqi yo'q!")
+
+    files = request.FILES.getlist('hujjat')
+    hujjatlar = []
+
+    with transaction.atomic():
+        for file in files:
+            try:
+                # Validate file extension
                 ext = file.name.split('.')[-1].lower()
-                if ext not in ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx']:
-                    return JsonResponse({'success': False,
-                                         'message': f"Fayl '{file.name}' formati qo'llab-quvvatlanmaydi! Faqat JPG, PNG, PDF, DOC, DOCX ruxsat etiladi!"})
-                if file.size > 10 * 1024 * 1024:
-                    return JsonResponse(
-                        {'success': False, 'message': f"Fayl '{file.name}' hajmi 10MB dan kichik bo'lishi kerak!"})
+                allowed_extensions = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx']
+                if ext not in allowed_extensions:
+                    return JsonResponse({
+                        'success': False,
+                        'message': f"Fayl '{file.name}' formati qo'llab-quvvatlanmaydi! Faqat {', '.join(allowed_extensions)} ruxsat etiladi!"
+                    }, status=400)
+
+                # Validate file size
+                if file.size > 10 * 1024 * 1024:  # 10MB
+                    return JsonResponse({
+                        'success': False,
+                        'message': f"Fayl '{file.name}' hajmi 10MB dan kichik bo'lishi kerak!"
+                    }, status=400)
+
+                # Create and save the document
                 hujjat = TruckHujjat.objects.create(
                     truck=truck,
                     hujjat=file,
@@ -251,12 +278,18 @@ def upload_hujjat(request):
                     'original_file_name': hujjat.original_file_name,
                     'hujjat_url': hujjat.hujjat.url
                 })
-        return JsonResponse({
-            'success': True,
-            'message': "Hujjatlar muvaffaqiyatli yuklandi!",
-            'hujjatlar': hujjatlar
-        })
-    return JsonResponse({'success': False, 'message': "Faqat POST so'rovlari qabul qilinadi!"})
+            except Exception as e:
+                transaction.set_rollback(True)
+                return JsonResponse({
+                    'success': False,
+                    'message': f"Fayl '{file.name}' ni yuklashda xatolik: {str(e)}"
+                }, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'message': "Hujjatlar muvaffaqiyatli yuklandi!",
+        'hujjatlar': hujjatlar
+    })
 
 
 @login_required
