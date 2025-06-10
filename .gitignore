@@ -130,5 +130,5 @@ dmypy.json
 .env
 
 # Database files
-*.db
-data/*.db  # Bu fayllarni ham e'tibordan chetda qoldiradi
+#*.db
+#data/*.db  # Bu fayllarni ham e'tibordan chetda qoldiradi
