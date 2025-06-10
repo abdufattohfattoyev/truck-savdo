@@ -17,6 +17,14 @@ if not SECRET_KEY:
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://147.93.130.94:8585",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://147.93.130.94:8585",
+]
+
 # Celery settings
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
