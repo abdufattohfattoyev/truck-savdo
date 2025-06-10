@@ -1,42 +1,42 @@
 {% extends 'base.html' %}
-{% block title %}Expense Details - Truck Sales{% endblock %}
+{% block title %}Chiqim tafsilotlari - Truck Sales{% endblock %}
 {% block content %}
 <div class="container-xl">
     <div class="page-header">
-        <h1 class="page-title">Expense Details</h1>
+        <h1 class="page-title">Chiqim tafsilotlari</h1>
         <a href="{% url 'chiqim_list' %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back
+            <i class="bi bi-arrow-left"></i> Orqaga
         </a>
     </div>
     <div class="card-grid">
-        <div class="card"><h3>Vehicle</h3><p class="value">{{ chiqim.truck.make }} {{ chiqim.truck.model|default:"N/A" }}</p></div>
-        <div class="card"><h3>Customer</h3><p class="value">{{ chiqim.xaridor.ism_familiya|default:"N/A" }}</p><p class="value">Phone: {{ chiqim.xaridor.telefon_raqam|default:"No phone" }}</p></div>
-        <div class="card"><h3>Total Price</h3><p class="value">${{ chiqim.narx|floatformat:2 }}</p></div>
-        <div class="card"><h3>Initial Payment (Planned)</h3><p class="value">${{ chiqim.boshlangich_summa|floatformat:2 }}</p></div>
-        <div class="card"><h3>Initial Paid Amount</h3><p class="value">${{ total_boshlangich_paid|floatformat:2 }}</p></div>
-        <div class="card"><h3>Initial Remaining</h3><p class="value" id="initial-remaining">${{ boshlangich_qoldiq|floatformat:2 }}</p></div>
-        <div class="card"><h3>Total Monthly Paid</h3><p class="value">${{ total_monthly_paid|floatformat:2 }}</p></div>
-        <div class="card"><h3>Remaining Balance</h3><p class="value">${{ remaining_debt|floatformat:2 }}</p></div>
-        <div class="card"><h3>Debt Percentage</h3><p class="value">{{ payment_schedule.0.debt_percentage|floatformat:2 }}%</p></div>
-        <div class="card"><h3>Payment Term</h3><p class="value">{{ chiqim.bo_lib_tolov_muddat }} months</p></div>
-        <div class="card"><h3>First Payment Date</h3><p class="value">{{ chiqim.tolov_sana|date:"Y-m-d" }}</p></div>
-        <div class="card"><h3>Notes</h3><p class="value">{{ chiqim.izoh|default:"No notes" }}</p></div>
-        {% if chiqim.hujjatlar %}<div class="card"><h3>Documents</h3><p class="value"><a href="{{ chiqim.hujjatlar.url }}" target="_blank" class="link">View Document</a></p></div>{% endif %}
+        <div class="card"><h3>Transport</h3><p class="value">{{ chiqim.truck.make }} {{ chiqim.truck.model|default:"Ma'lumot yo'q" }}</p></div>
+        <div class="card"><h3>Xaridor</h3><p class="value">{{ chiqim.xaridor.ism_familiya|default:"Ma'lumot yo'q" }}</p><p class="value">Telefon: {{ chiqim.xaridor.telefon_raqam|default:"Telefon yo'q" }}</p></div>
+        <div class="card"><h3>Umumiy narx</h3><p class="value">${{ chiqim.narx|floatformat:2 }}</p></div>
+        <div class="card"><h3>Boshlang'ich to'lov (rejalashtirilgan)</h3><p class="value">${{ chiqim.boshlangich_summa|floatformat:2 }}</p></div>
+        <div class="card"><h3>Boshlang'ich to'langan summa</h3><p class="value">${{ total_boshlangich_paid|floatformat:2 }}</p></div>
+        <div class="card"><h3>Boshlang'ich qoldiq</h3><p class="value" id="initial-remaining">${{ boshlangich_qoldiq|floatformat:2 }}</p></div>
+        <div class="card"><h3>Umumiy oylik to'langan</h3><p class="value">${{ total_monthly_paid|floatformat:2 }}</p></div>
+        <div class="card"><h3>Qoldiq summa</h3><p class="value">${{ remaining_debt|floatformat:2 }}</p></div>
+        <div class="card"><h3>Qarz foizi</h3><p class="value">{{ payment_schedule.0.debt_percentage|floatformat:2 }}%</p></div>
+        <div class="card"><h3>To'lov muddati</h3><p class="value">{{ chiqim.bo_lib_tolov_muddat }} oy</p></div>
+        <div class="card"><h3>Birinchi to'lov sanasi</h3><p class="value">{{ chiqim.tolov_sana|date:"Y-m-d" }}</p></div>
+        <div class="card"><h3>Izohlar</h3><p class="value">{{ chiqim.izoh|default:"Izoh yo'q" }}</p></div>
+        {% if chiqim.hujjatlar %}<div class="card"><h3>Hujjatlar</h3><p class="value"><a href="{{ chiqim.hujjatlar.url }}" target="_blank" class="link">Hujjatni ko'rish</a></p></div>{% endif %}
     </div>
     <section class="payment-schedule-section mt-5">
-        <h2 class="section-title">Payment Schedule</h2>
+        <h2 class="section-title">To'lovlar jadvali</h2>
         <div class="filter-section">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search by month..." aria-label="Search payments by month">
-            <select id="filterStatus" class="filter-select" aria-label="Filter payments by status">
-                <option value="">Filter by Status</option>
-                <option value="paid">Paid</option>
-                <option value="unpaid">Unpaid</option>
+            <input type="text" id="searchInput" class="search-input" placeholder="Oy bo'yicha qidirish..." aria-label="To'lovlarni oy bo'yicha qidirish">
+            <select id="filterStatus" class="filter-select" aria-label="To'lovlarni holati bo'yicha filtr">
+                <option value="">Holati bo'yicha filtr</option>
+                <option value="paid">To'langan</option>
+                <option value="unpaid">To'lanmagan</option>
             </select>
         </div>
         {% if payment_schedule %}
         <div class="table-responsive">
             <table class="data-table">
-                <thead><tr><th>Month</th><th>Date</th><th>Payment Amount</th><th>Paid Amount</th><th>Status</th><th>Days Remaining</th><th>Balance</th><th>Progress</th><th>Next Payment</th></tr></thead>
+                <thead><tr><th>Oy</th><th>Sana</th><th>To'lov summasi</th><th>To'langan summa</th><th>Holati</th><th>Qolgan kunlar</th><th>Balans</th><th>Jarayon</th><th>Keyingi to'lov</th></tr></thead>
                 <tbody id="paymentTableBody">
                     {% for payment in payment_schedule %}
                     <tr data-month="{{ payment.month }}" data-status="{% if payment.is_paid %}paid{% else %}unpaid{% endif %}">
@@ -45,29 +45,29 @@
                         <td>${{ payment.amount|floatformat:2 }}</td>
                         <td>${{ payment.paid_amount|floatformat:2 }}</td>
                         <td><span class="status {% if payment.is_paid %}paid{% else %}unpaid{% endif %}">
-                            {% if payment.is_paid %}Paid{% else %}Unpaid{% endif %}</span></td>
-                        <td>{% if payment.days_left > 0 %}{{ payment.days_left }} days{% else %}Overdue{% endif %}</td>
+                            {% if payment.is_paid %}To'langan{% else %}To'lanmagan{% endif %}</span></td>
+                        <td>{% if payment.days_left > 0 %}{{ payment.days_left }} kun{% else %}Muddat o'tgan{% endif %}</td>
                         <td>${{ payment.carryover|floatformat:2 }}</td>
                         <td><div class="progress-bar"><div class="progress" style="width: {{ payment.progress_percentage|floatformat:2 }}%;"></div></div><span class="progress-text">{{ payment.progress_percentage|floatformat:2 }}%</span></td>
-                        <td>{% if not payment.is_paid and payment.pending_debt > 0 %}${{ payment.pending_debt|floatformat:2 }} due{% else %}-{% endif %}</td>
+                        <td>{% if not payment.is_paid and payment.pending_debt > 0 %}${{ payment.pending_debt|floatformat:2 }} to'lanishi kerak{% else %}-{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="empty-state"><i class="bi bi-exclamation-circle"></i><p>No payment schedule available.</p></div>
+        <div class="empty-state"><i class="bi bi-exclamation-circle"></i><p>To'lovlar jadvali mavjud emas.</p></div>
         {% endif %}
     </section>
     <section class="payment-history-section mt-5">
         <div class="page-header">
-            <h2 class="section-title">Payment History</h2>
+            <h2 class="section-title">To'lovlar tarixi</h2>
             <div class="action-buttons">
                 <button class="btn-add btn-boshlangich" id="add-initial-payment-btn" style="display: {% if boshlangich_qoldiq <= 0 %}none{% else %}block{% endif %};" onclick="openAddBoshlangichPaymentForm({{ chiqim.id }})">
-                    <i class="bi bi-wallet2"></i> Add Initial Payment
+                    <i class="bi bi-wallet2"></i> Boshlang'ich to'lov qo'shish
                 </button>
                 <button class="btn-add" onclick="openAddPaymentForm({{ chiqim.id }})">
-                    <i class="bi bi-cash-coin"></i> Add Monthly Payment
+                    <i class="bi bi-cash-coin"></i> Oylik to'lov qo'shish
                 </button>
             </div>
         </div>
@@ -76,29 +76,29 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Payment Type</th>
-                        <th>Customer</th>
-                        <th>Type</th>
-                        <th>Actions</th>
+                        <th>Sana</th>
+                        <th>Summa</th>
+                        <th>To'lov turi</th>
+                        <th>Xaridor</th>
+                        <th>Turi</th>
+                        <th>Amallar</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for tolov in chiqim.boshlangich_tolovlar.all %}
                     <tr data-id="{{ tolov.id }}" data-type="boshlangich">
                         <td>{{ tolov.sana|date:"Y-m-d" }}</td>
-                        <td>${{ tolov.summa|floatformat:2 }}</td>
+                        <td class="tolov-summa">${{ tolov.summa|floatformat:2 }}</td>
                         <td>{{ tolov.get_tolov_turi_display }}</td>
                         <td>{{ tolov.xaridor.ism_familiya }}</td>
-                        <td>Initial Payment</td>
+                        <td>Boshlang'ich to'lov</td>
                         <td>
                             <div class="action-buttons">
                                 <button class="btn-action btn-edit" onclick="openEditBoshlangichPaymentForm({{ tolov.id }})">
-                                    <i class="bi bi-pencil"></i> Edit
+                                    <i class="bi bi-pencil"></i> Tahrirlash
                                 </button>
                                 <button class="btn-action btn-delete" onclick="openDeleteBoshlangichPaymentForm({{ tolov.id }})">
-                                    <i class="bi bi-trash"></i> Delete
+                                    <i class="bi bi-trash"></i> O'chirish
                                 </button>
                             </div>
                         </td>
@@ -107,17 +107,17 @@
                     {% for tolov in chiqim.tolovlar.all %}
                     <tr data-id="{{ tolov.id }}" data-type="monthly">
                         <td>{{ tolov.sana|date:"Y-m-d" }}</td>
-                        <td>${{ tolov.summa|floatformat:2 }}</td>
+                        <td class="tolov-summa">${{ tolov.summa|floatformat:2 }}</td>
                         <td>{{ tolov.get_tolov_turi_display }}</td>
                         <td>{{ tolov.xaridor.ism_familiya }}</td>
-                        <td>Monthly Payment</td>
+                        <td>Oylik to'lov</td>
                         <td>
                             <div class="action-buttons">
                                 <button class="btn-action btn-edit" onclick="openEditPaymentForm({{ tolov.id }})">
-                                    <i class="bi bi-pencil"></i> Edit
+                                    <i class="bi bi-pencil"></i> Tahrirlash
                                 </button>
                                 <button class="btn-action btn-delete" onclick="openDeletePaymentForm({{ tolov.id }})">
-                                    <i class="bi bi-trash"></i> Delete
+                                    <i class="bi bi-trash"></i> O'chirish
                                 </button>
                             </div>
                         </td>
@@ -129,17 +129,18 @@
         {% else %}
         <div class="empty-state">
             <i class="bi bi-exclamation-circle"></i>
-            <p>No payments available yet.</p>
+            <p>Hozircha to'lovlar mavjud emas.</p>
         </div>
         {% endif %}
     </section>
     <div class="action-section mt-5">
         <div class="action-buttons">
-            <button class="btn-action btn-edit" onclick="openEditChiqimForm({{ chiqim.id }})"><i class="bi bi-pencil"></i> Edit</button>
-            <button class="btn-action btn-delete" onclick="openDeleteChiqimForm({{ chiqim.id }})"><i class="bi bi-trash"></i> Delete</button>
+            <button class="btn-action btn-edit" onclick="openEditChiqimForm({{ chiqim.id }})"><i class="bi bi-pencil"></i> Tahrirlash</button>
+            <button class="btn-action btn-delete" onclick="openDeleteChiqimForm({{ chiqim.id }})"><i class="bi bi-trash"></i> O'chirish</button>
         </div>
     </div>
 </div>
+<div id="formSidebar" class="form-sidebar"></div>
 {% endblock %}
 
 {% block extra_js %}
@@ -189,69 +190,30 @@
             return cookieValue;
         }
 
-        async function submitForm(formId, url, successMessage, callback = () => {}) {
-            const form = document.getElementById(formId);
-            if (form) {
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    clearErrors();
-                    const formData = new FormData(form);
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            body: formData,
-                            headers: { 'X-CSRFToken': getCookie('csrftoken') }
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                            showAlert('success', successMessage);
-                            closeFormSidebar();
-                            callback(data); // Callback chaqirish
-                            setTimeout(() => location.reload(), 1500); // Sahifani yangilash
-                        } else {
-                            displayErrors(data.errors || { '__all__': ['An error occurred'] });
-                        }
-                    } catch (error) {
-                        console.error('Form submission error:', error);
-                        showAlert('error', 'Error connecting to the server');
-                    }
-                }, { once: true });
-            }
-        }
-
-        function openFormSidebar(url, title) {
-            fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    const sidebar = document.getElementById('formSidebar');
-                    if (sidebar) {
-                        sidebar.innerHTML = html;
-                        sidebar.classList.add('active');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading form:', error);
-                    showAlert('error', 'Error loading form');
-                });
-        }
-
-        function closeFormSidebar() {
-            const sidebar = document.getElementById('formSidebar');
-            if (sidebar) {
-                sidebar.classList.remove('active');
-                sidebar.innerHTML = '';
-            }
-        }
-
         function showAlert(type, message) {
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type}`;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '1000';
+            alertDiv.style.padding = '1rem';
+            alertDiv.style.borderRadius = '0.5rem';
+            alertDiv.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
+            alertDiv.style.color = type === 'success' ? '#155724' : '#721c24';
+            alertDiv.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+            alertDiv.style.maxWidth = '400px';
+            alertDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
             alertDiv.textContent = message;
             document.body.appendChild(alertDiv);
-            setTimeout(() => alertDiv.remove(), 3000);
+            setTimeout(() => alertDiv.remove(), 5000);
         }
 
         function displayErrors(errors) {
+            clearErrors();
             for (const [field, messages] of Object.entries(errors)) {
                 const input = document.querySelector(`#id_${field}`);
                 if (input) {
@@ -266,44 +228,134 @@
             }
         }
 
-        // Existing form handlers
+        async function submitForm(formId, url, successMessage, callback = () => {}) {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    clearErrors();
+                    const formData = new FormData(form);
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRFToken': getCookie('csrftoken'),
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            showAlert('success', successMessage);
+                            closeFormSidebar();
+                            callback(data);
+                            if (data.reload) {
+                                setTimeout(() => location.reload(), 1500);
+                            }
+                        } else {
+                            displayErrors(data.errors || { '__all__': ['Kutilmagan xatolik yuz berdi'] });
+                        }
+                    } catch (error) {
+                        console.error('Form submission error:', error);
+                        showAlert('error', 'Server bilan bog\'lanishda xatolik yuz berdi');
+                    }
+                }, { once: true });
+            }
+        }
+
+        function openFormSidebar(url, title) {
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.text();
+                })
+                .then(html => {
+                    const sidebar = document.getElementById('formSidebar');
+                    if (sidebar) {
+                        sidebar.innerHTML = html;
+                        sidebar.classList.add('active');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading form:', error);
+                    showAlert('error', 'Forma yuklashda xatolik yuz berdi');
+                });
+        }
+
+        function closeFormSidebar() {
+            const sidebar = document.getElementById('formSidebar');
+            if (sidebar) {
+                sidebar.classList.remove('active');
+                sidebar.innerHTML = '';
+            }
+        }
+
         window.openEditChiqimForm = (id) => {
-            openFormSidebar(`/chiqim/edit/${id}/`, "Edit Expense");
-            setTimeout(() => submitForm('chiqimForm', `/chiqim/edit/${id}/`, "Expense successfully updated!"), 300);
-        };
-        window.openDeleteChiqimForm = (id) => {
-            openFormSidebar(`/chiqim/delete/${id}/`, "Delete Expense");
-            setTimeout(() => submitForm('chiqimDeleteForm', `/chiqim/delete/${id}/`, "Expense successfully deleted!"), 300);
-        };
-        window.openAddPaymentForm = (chiqimId) => {
-            openFormSidebar(`/chiqim/payment/add/${chiqimId}/`, "Add Monthly Payment");
-            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/add/${chiqimId}/`, "Monthly payment successfully added!"), 300);
-        };
-        window.openEditPaymentForm = (tolovId) => {
-            openFormSidebar(`/chiqim/payment/edit/${tolovId}/`, "Edit Monthly Payment");
-            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/edit/${tolovId}/`, "Monthly payment successfully updated!"), 300);
-        };
-        window.openDeletePaymentForm = (tolovId) => {
-            openFormSidebar(`/chiqim/payment/delete/${tolovId}/`, "Delete Monthly Payment");
-            setTimeout(() => submitForm('tolovDeleteForm', `/chiqim/payment/delete/${tolovId}/`, "Monthly payment successfully deleted!"), 300);
+            openFormSidebar(`/chiqim/edit/${id}/`, "Chiqimni tahrirlash");
+            setTimeout(() => submitForm('chiqimForm', `/chiqim/edit/${id}/`, "Chiqim muvaffaqiyatli yangilandi!"), 300);
         };
 
-        // Initial payment handlers
+        window.openDeleteChiqimForm = (id) => {
+            openFormSidebar(`/chiqim/delete/${id}/`, "Chiqimni o'chirish");
+            setTimeout(() => submitForm('chiqimDeleteForm', `/chiqim/delete/${id}/`, "Chiqim muvaffaqiyatli o'chirildi!"), 300);
+        };
+
+        window.openAddPaymentForm = (chiqimId) => {
+            openFormSidebar(`/chiqim/payment/add/${chiqimId}/`, "Oylik to'lov qo'shish");
+            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/add/${chiqimId}/`, "Oylik to'lov muvaffaqiyatli qo'shildi!"), 300);
+        };
+
+        window.openEditPaymentForm = (tolovId) => {
+            openFormSidebar(`/chiqim/payment/edit/${tolovId}/`, "Oylik to'lovni tahrirlash");
+            setTimeout(() => submitForm('tolovForm', `/chiqim/payment/edit/${tolovId}/`, "Oylik to'lov muvaffaqiyatli yangilandi!"), 300);
+        };
+
+        window.openDeletePaymentForm = (tolovId) => {
+            openFormSidebar(`/chiqim/payment/delete/${tolovId}/`, "Oylik to'lovni o'chirish");
+            setTimeout(() => submitForm('tolovDeleteForm', `/chiqim/payment/delete/${tolovId}/`, "Oylik to'lov muvaffaqiyatli o'chirildi!"), 300);
+        };
+
         window.openAddBoshlangichPaymentForm = (chiqimId) => {
-            openFormSidebar(`/chiqim/boshlangich_payment/add/${chiqimId}/`, "Add Initial Payment");
-            setTimeout(() => submitForm('boshlangichTolovForm', `/chiqim/boshlangich_payment/add/${chiqimId}/`, "Initial payment successfully added!", (data) => {
+            openFormSidebar(`/chiqim/boshlangich_payment/add/${chiqimId}/`, "Boshlang'ich to'lov qo'shish");
+            setTimeout(() => submitForm('boshlangichTolovForm', `/chiqim/boshlangich_payment/add/${chiqimId}/`, "Boshlang'ich to'lov muvaffaqiyatli qo'shildi!", (data) => {
                 if (data.success) {
                     initialRemaining.textContent = `$${data.boshlangich_qoldiq.toFixed(2)}`;
                     if (data.boshlangich_qoldiq <= 0) {
                         addInitialButton.style.display = 'none';
                     }
+                    const tableBody = document.querySelector('.payment-history-section tbody');
+                    const newRow = document.createElement('tr');
+                    newRow.dataset.id = data.tolov_id || new Date().getTime();
+                    newRow.dataset.type = 'boshlangich';
+                    newRow.innerHTML = `
+                        <td>${new Date().toISOString().split('T')[0]}</td>
+                        <td class="tolov-summa">$${data.tolov_summa.toFixed(2)}</td>
+                        <td>${data.tolov_turi || 'Noma\'lum'}</td>
+                        <td>${data.xaridor || 'Noma\'lum'}</td>
+                        <td>Boshlang'ich to'lov</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-action btn-edit" onclick="openEditBoshlangichPaymentForm(${data.tolov_id || newRow.dataset.id})">
+                                    <i class="bi bi-pencil"></i> Tahrirlash
+                                </button>
+                                <button class="btn-action btn-delete" onclick="openDeleteBoshlangichPaymentForm(${data.tolov_id || newRow.dataset.id})">
+                                    <i class="bi bi-trash"></i> O'chirish
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.prepend(newRow);
+                } else {
+                    showAlert('error', data.errors.__all__ ? data.errors.__all__.join(', ') : 'To\'lov qo\'shishda xatolik yuz berdi!');
                 }
             }), 300);
         };
 
         window.openEditBoshlangichPaymentForm = (tolovId) => {
-            openFormSidebar(`/chiqim/boshlangich_payment/edit/${tolovId}/`, "Edit Initial Payment");
-            setTimeout(() => submitForm('boshlangichTolovForm', `/chiqim/boshlangich_payment/edit/${tolovId}/`, "Initial payment successfully updated!", (data) => {
+            openFormSidebar(`/chiqim/boshlangich_payment/edit/${tolovId}/`, "Boshlang'ich to'lovni tahrirlash");
+            setTimeout(() => submitForm('boshlangich“TolovForm', `/chiqim/boshlangich_payment/edit/${tolovId}/`, "Boshlang'ich to'lov muvaffaqiyatli yangilandi!", (data) => {
                 if (data.success) {
                     initialRemaining.textContent = `$${data.boshlangich_qoldiq.toFixed(2)}`;
                     if (data.boshlangich_qoldiq > 0) {
@@ -311,23 +363,30 @@
                     } else {
                         addInitialButton.style.display = 'none';
                     }
-                    // Payment history jadvalini yangilash
-                    const row = document.querySelector(`tr[data-id="${tolovId}"][data-type="boshlangich"] td:nth-child(2)`);
+                    const row = document.querySelector(`tr[data-id="${tolovId}"][data-type="boshlangich"] .tolov-summa`);
                     if (row) {
-                        row.textContent = `$${data.tolov_summa.toFixed(2)}`; // `tolov_summa` ni serverdan qaytarish kerak
+                        row.textContent = `$${data.tolov_summa.toFixed(2)}`;
                     }
+                } else {
+                    showAlert('error', data.errors.__all__ ? data.errors.__all__.join(', ') : 'To\'lov yangilashda xatolik yuz berdi!');
                 }
             }), 300);
         };
 
         window.openDeleteBoshlangichPaymentForm = (tolovId) => {
-            openFormSidebar(`/chiqim/boshlangich_payment/delete/${tolovId}/`, "Delete Initial Payment");
-            setTimeout(() => submitForm('boshlangichTolovDeleteForm', `/chiqim/boshlangich_payment/delete/${tolovId}/`, "Initial payment successfully deleted!", (data) => {
+            openFormSidebar(`/chiqim/boshlangich_payment/delete/${tolovId}/`, "Boshlang'ich to'lovni o'chirish");
+            setTimeout(() => submitForm('boshlangichTolovDeleteForm', `/chiqim/boshlangich_payment/delete/${tolovId}/`, "Boshlang'ich to'lov muvaffaqiyatli o'chirildi!", (data) => {
                 if (data.success) {
                     initialRemaining.textContent = `$${data.boshlangich_qoldiq.toFixed(2)}`;
                     if (data.boshlangich_qoldiq > 0) {
                         addInitialButton.style.display = 'block';
                     }
+                    const row = document.querySelector(`tr[data-id="${tolovId}"][data-type="boshlangich"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                } else {
+                    showAlert('error', data.errors.__all__ ? data.errors.__all__.join(', ') : 'To\'lov o\'chirishda xatolik yuz berdi!');
                 }
             }), 300);
         };
@@ -357,54 +416,39 @@
     .btn { border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-sm); font-weight: 500; transition: var(--transition); display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
     .btn-secondary { background-color: #6c757d; color: white; }
     .btn-secondary:hover { background-color: #5a6268; box-shadow: var(--shadow-sm); }
-    .btn-add, .btn-boshlangich { background-color: var(--accent); color: white; }
-    .btn-add:hover, .btn-boshlangich:hover { background-color: var(--secondary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-    .btn-boshlangich { background-color: #17a2b8; }
-    .btn-boshlangich:hover { background-color: #138496; }
-    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .card { background: white; border: 1px solid #e0e0e0; border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-sm); transition: var(--transition); }
-    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-    .card h3 { font-size: 0.875rem; color: #6c757d; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
-    .value { font-size: 1.125rem; font-weight: 500; color: var(--dark); margin: 0; }
+    .btn-add, .btn-boshlangich { background-color: var(--primary); color: white; }
+    .btn-add:hover, .btn-boshlangich:hover { background-color: var(--secondary); box-shadow: var(--shadow-sm); }
+    .btn-action { padding: 0.5rem 1rem; font-size: 0.9rem; }
+    .btn-edit { background-color: var(--success); color: white; }
+    .btn-edit:hover { background-color: #3da8d6; }
+    .btn-delete { background-color: var(--danger); color: white; }
+    .btn-delete:hover { background-color: #d81e70; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .card { background-color: var(--light); padding: 1.5rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+    .card h3 { font-size: 1.1rem; font-weight: 600; color: var(--dark); margin: 0 0 0.5rem; }
+    .card p.value { font-size: 1rem; color: var(--dark); margin: 0; }
     .link { color: var(--primary); text-decoration: none; }
     .link:hover { text-decoration: underline; }
-    .payment-schedule-section, .payment-history-section { background: white; border-radius: var(--radius-md); padding: 2rem; box-shadow: var(--shadow-sm); margin-bottom: 2rem; }
-    .filter-section { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .search-input, .filter-select { padding: 0.5rem 1rem; border: 1px solid #ced4da; border-radius: var(--radius-sm); font-size: 1rem; width: 220px; transition: border-color 0.2s; }
-    .search-input:focus, .filter-select:focus { border-color: var(--primary); outline: none; }
-    .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
-    .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e9ecef; }
-    .data-table th { background: #f1f3f5; font-size: 0.75rem; text-transform: uppercase; color: #495057; letter-spacing: 0.5px; }
-    .data-table tr:hover { background: #f8f9fa; }
-    .status { padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.875rem; font-weight: 500; display: inline-block; }
-    .paid { background: #d4edda; color: #155724; }
-    .unpaid { background: #f8d7da; color: #721c24; }
-    .progress-bar { width: 100%; height: 8px; background: #e9ecef; border-radius: var(--radius-sm); overflow: hidden; }
-    .progress { height: 100%; background: var(--success); transition: width 0.3s ease; }
-    .progress-text { font-size: 0.875rem; color: #6c757d; margin-top: 0.25rem; display: block; }
-    .action-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .btn-action { padding: 0.5rem 1rem; font-size: 0.875rem; border: none; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.25rem; transition: var(--transition); cursor: pointer; }
-    .btn-edit { background: var(--primary); color: white; }
-    .btn-edit:hover { background: var(--secondary); box-shadow: var(--shadow-sm); }
-    .btn-delete { background: var(--danger); color: white; }
-    .btn-delete:hover { background: #d1145a; box-shadow: var(--shadow-sm); }
-    .action-section { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
-    .empty-state { text-align: center; padding: 2rem; background: white; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
-    .empty-state i { font-size: 2.5rem; color: #adb5bd; margin-bottom: 1rem; }
-    .empty-state p { color: #6c757d; font-size: 1rem; }
-    @media (max-width: 992px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } .data-table th, .data-table td { padding: 0.75rem; } }
-    @media (max-width: 768px) {
-        .container-xl { padding: 1.5rem 1rem; }
-        .card-grid { grid-template-columns: 1fr; }
-        .filter-section { flex-direction: column; }
-        .search-input, .filter-select { width: 100%; }
-        .data-table { display: block; overflow-x: auto; white-space: nowrap; }
-        .action-buttons { flex-direction: column; }
-        .btn-action, .btn-add, .btn-boshlangich { width: 100%; justify-content: center; }
-    }
-    @media (max-width: 576px) {
-        .page-header { flex-direction: column; align-items: flex-start; }
-        .data-table th, .data-table td { font-size: 0.875rem; padding: 0.5rem; }
-    }
+    .table-responsive { overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; background-color: var(--light); }
+    .data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #dee2e6; }
+    .data-table th { background-color: #e9ecef; font-weight: 600; }
+    .status.paid { color: #28a745; font-weight: 500; }
+    .status.unpaid { color: var(--danger); font-weight: 500; }
+    .progress-bar { background-color: #e9ecef; border-radius: var(--radius-sm); height: 10px; width: 100px; }
+    .progress { background-color: var(--success); height: 100%; border-radius: var(--radius-sm); }
+    .progress-text { margin-left: 0.5rem; font-size: 0.9rem; }
+    .filter-section { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .search-input, .filter-select { padding: 0.5rem; border: 1px solid #ced4da; border-radius: var(--radius-sm); font-size: 0.9rem; }
+    .search-input { flex: 1; min-width: 200px; }
+    .filter-select { width: 200px; }
+    .empty-state { text-align: center; padding: 2rem; color: #6c757d; }
+    .empty-state i { font-size: 2rem; margin-bottom: 0.5rem; }
+    .action-section { display: flex; justify-content: flex-end; }
+    .action-buttons { display: flex; gap: 1rem; }
+    .form-sidebar { position: fixed; top: 0; right: -100%; width: 400px; max-width: 90%; height: 100%; background-color: white; box-shadow: -2px 0 10px rgba(0,0,0,0.2); transition: right 0.3s ease; z-index: 1000; padding: 1.5rem; overflow-y: auto; }
+    .form-sidebar.active { right: 0; }
+    .is-invalid { border-color: var(--danger) !important; }
+    .invalid-feedback { color: var(--danger); font-size: 0.9rem; margin-top: 0.25rem; }
 </style>
 {% endblock %}

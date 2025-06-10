@@ -1,4 +1,3 @@
-
 from _decimal import Decimal
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -31,13 +30,7 @@ def create_bildirishnoma(chiqim, payment_date, days_before=30):
 
 def update_notifications(chiqim):
     cache_key = f'notifications_chiqim_{chiqim.id}'
-    cached_data = cache.get(cache_key)
-
-    if cached_data:
-        logger.debug(f"Using cached notification data for Chiqim ID {chiqim.id}")
-        return cached_data
-
-    current_date = timezone.now().date()
+    cache.delete(cache_key)  # Har doim keshni o'chirish
     chiqim = Chiqim.objects.prefetch_related('tolovlar', 'bildirishnomalar').get(id=chiqim.id)
 
     if chiqim.qoldiq_summa <= 0:
@@ -74,7 +67,7 @@ def update_notifications(chiqim):
                 )
             )
             is_paid = paid_amount >= monthly_payment
-            days_left = (payment_date - current_date).days
+            days_left = (payment_date - timezone.now().date()).days
 
             if payment_date not in existing_dates:
                 Bildirishnoma.objects.create(
@@ -92,7 +85,7 @@ def update_notifications(chiqim):
                 'paid_amount': paid_amount,
                 'is_paid': is_paid,
                 'days_left': days_left,
-                'days_overdue': abs(days_left) if days_left < 0 else 0  # For schedule consistency
+                'days_overdue': abs(days_left) if days_left < 0 else 0
             })
 
     notifications = chiqim.bildirishnomalar.all()
@@ -109,13 +102,12 @@ def update_notifications(chiqim):
                 'eslatma': n.eslatma,
                 'eslatish_kunlari': n.eslatish_kunlari,
                 'days_left': n.days_left,
-                'days_overdue': n.days_overdue  # Changed from abs_days_left to days_overdue
+                'days_overdue': n.days_overdue
             } for n in notifications
         ]
     }
     cache.set(cache_key, cached_data, CACHE_TIMEOUT)
     return cached_data
-
 
 @login_required
 def chiqim_list(request):
@@ -137,12 +129,11 @@ def chiqim_list(request):
     tolov_forms = {}
 
     for chiqim in chiqimlar:
-        chiqim.update_totals()  # Update remaining balance
+        chiqim.update_totals()
         total_boshlangich_paid = chiqim.get_total_boshlangich_paid()
         total_monthly_paid = chiqim.get_total_monthly_paid()
         remaining_debt = chiqim.qoldiq_summa
 
-        # Calculate payment schedule
         payment_schedule = []
         start_date = chiqim.tolov_sana
         target_day = start_date.day
@@ -184,12 +175,10 @@ def chiqim_list(request):
                 'debt_percentage': (remaining_debt / chiqim.narx) * 100 if chiqim.narx > 0 else 0
             })
 
-        # Add overdue notifications
         chiqim.overdue_notifications = [
             n for n in chiqim.bildirishnomalar.filter(status='overdue').order_by('tolov_sana')
         ]
 
-        # Find the next unpaid payment
         next_unpaid_payment = None
         if payment_schedule and remaining_debt > 0:
             next_unpaid_payment = min(
@@ -344,8 +333,8 @@ def chiqim_create(request):
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({
                             'success': True,
-                            'message': 'Expense successfully added!',
-                            'redirect_url': None  # Optionally include a redirect URL
+                            'message': 'Chiqim muvaffaqiyatli qo\'shildi!',
+                            'redirect_url': None
                         })
                     return redirect('chiqim_list')
             except Exception as e:
@@ -353,7 +342,7 @@ def chiqim_create(request):
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': False,
-                        'errors': {'__all__': ['An unexpected error occurred. Please try again.']},
+                        'errors': {'__all__': ['Kutilmagan xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.']},
                     }, status=500)
                 raise
         else:
@@ -364,7 +353,6 @@ def chiqim_create(request):
                     'success': False,
                     'errors': errors,
                 }, status=400)
-            # For non-AJAX, re-render the form with errors
     else:
         form = ChiqimForm(user=request.user)
 
@@ -414,7 +402,7 @@ def chiqim_delete(request, id):
         try:
             with transaction.atomic():
                 old_truck = chiqim.truck
-                chiqim.bildirishnomalar.all().delete()  # Fixed typo
+                chiqim.bildirishnomalar.all().delete()
                 cache.delete(f'notifications_chiqim_{chiqim.id}')
                 chiqim.delete()
                 old_truck.sotilgan = False
@@ -432,7 +420,7 @@ def add_boshlangich_payment(request, chiqim_id):
     chiqim = get_object_or_404(Chiqim, id=chiqim_id)
     if not request.user.is_superuser and (chiqim.truck.user != request.user or chiqim.xaridor.user != request.user):
         return JsonResponse(
-            {'success': False, 'error': "You do not have permission to add an initial payment for this expense!"},
+            {'success': False, 'error': "Sizga bu chiqim uchun boshlang'ich to'lov qo'shishga ruxsat yo'q!"},
             status=403
         )
 
@@ -450,8 +438,10 @@ def add_boshlangich_payment(request, chiqim_id):
             update_notifications(chiqim)
             return JsonResponse({
                 'success': True,
-                'message': "Initial payment successfully added!",
-                'reload': True
+                'message': "Boshlang'ich to'lov muvaffaqiyatli qo'shildi!",
+                'reload': True,
+                'boshlangich_qoldiq': float(chiqim.get_boshlangich_qoldiq()),
+                'tolov_summa': float(tolov.summa)
             })
         else:
             errors = {field: [str(error) for error in errors] for field, errors in form.errors.items()}
@@ -462,7 +452,7 @@ def add_boshlangich_payment(request, chiqim_id):
         context = {
             'form': form,
             'chiqim': chiqim,
-            'today': timezone.now().date(),  # Add today's date to context
+            'today': timezone.now().date(),
         }
         return render(request, 'chiqim/boshlangich_tolov_form.html', context)
 
@@ -471,7 +461,7 @@ def update_boshlangich_payment(request, tolov_id):
     tolov = get_object_or_404(BoshlangichTolov, id=tolov_id)
     chiqim = tolov.chiqim
     if not request.user.is_superuser and (chiqim.truck.user != request.user or chiqim.xaridor.user != request.user):
-        return JsonResponse({'success': False, 'error': "You do not have permission to edit this initial payment!"}, status=403)
+        return JsonResponse({'success': False, 'error': "Sizga bu boshlang'ich to'lovni tahrirlashga ruxsat yo'q!"}, status=403)
 
     if request.method == 'POST':
         form = BoshlangichTolovForm(request.POST, instance=tolov, initial={'chiqim': chiqim})
@@ -481,7 +471,13 @@ def update_boshlangich_payment(request, tolov_id):
             chiqim.save()
             cache.delete(f'notifications_chiqim_{chiqim.id}')
             update_notifications(chiqim)
-            return JsonResponse({'success': True, 'message': "Initial payment successfully updated!", 'reload': True})
+            return JsonResponse({
+                'success': True,
+                'message': "Boshlang'ich to'lov muvaffaqiyatli yangilandi!",
+                'reload': True,
+                'boshlangich_qoldiq': float(chiqim.get_boshlangich_qoldiq()),
+                'tolov_summa': float(tolov.summa)
+            })
         else:
             errors = {field: [str(error) for error in errors] for field, errors in form.errors.items()}
             logger.warning(f'Initial payment update form errors: {errors}')
@@ -495,7 +491,7 @@ def delete_boshlangich_payment(request, tolov_id):
     tolov = get_object_or_404(BoshlangichTolov, id=tolov_id)
     chiqim = tolov.chiqim
     if not request.user.is_superuser and (chiqim.truck.user != request.user or chiqim.xaridor.user != request.user):
-        return JsonResponse({'success': False, 'error': "You do not have permission to delete this initial payment!"}, status=403)
+        return JsonResponse({'success': False, 'error': "Sizga bu boshlang'ich to'lovni o'chirishga ruxsat yo'q!"}, status=403)
 
     if request.method == 'POST':
         tolov.delete()
@@ -503,7 +499,12 @@ def delete_boshlangich_payment(request, tolov_id):
         chiqim.save()
         cache.delete(f'notifications_chiqim_{chiqim.id}')
         update_notifications(chiqim)
-        return JsonResponse({'success': True, 'message': "Initial payment successfully deleted!", 'reload': True})
+        return JsonResponse({
+            'success': True,
+            'message': "Boshlang'ich to'lov muvaffaqiyatli o'chirildi!",
+            'reload': True,
+            'boshlangich_qoldiq': float(chiqim.get_boshlangich_qoldiq())
+        })
     else:
         return render(request, 'chiqim/boshlangich_tolov_delete_form.html', {'tolov': tolov, 'chiqim': chiqim})
 
@@ -512,7 +513,7 @@ def add_payment(request, chiqim_id):
     chiqim = get_object_or_404(Chiqim, id=chiqim_id)
     if not request.user.is_superuser and (chiqim.truck.user != request.user or chiqim.xaridor.user != request.user):
         return JsonResponse(
-            {'success': False, 'error': "You do not have permission to add a payment for this expense!"},
+            {'success': False, 'error': "Sizga bu chiqim uchun to'lov qo'shishga ruxsat yo'q!"},
             status=403
         )
 
@@ -530,7 +531,7 @@ def add_payment(request, chiqim_id):
             update_notifications(chiqim)
             return JsonResponse({
                 'success': True,
-                'message': "Payment successfully added!",
+                'message': "To'lov muvaffaqiyatli qo'shildi!",
                 'reload': True
             })
         else:
@@ -542,7 +543,7 @@ def add_payment(request, chiqim_id):
         context = {
             'form': form,
             'chiqim': chiqim,
-            'today': timezone.now().date(),  # Add today's date to context
+            'today': timezone.now().date(),
         }
         return render(request, 'chiqim/tolov_form.html', context)
 
@@ -551,7 +552,7 @@ def update_payment(request, tolov_id):
     tolov = get_object_or_404(TolovTuri, id=tolov_id)
     chiqim = tolov.chiqim
     if not request.user.is_superuser and (chiqim.truck.user != request.user or chiqim.xaridor.user != request.user):
-        return JsonResponse({'success': False, 'error': "You do not have permission to edit this payment!"}, status=403)
+        return JsonResponse({'success': False, 'error': "Sizga bu to'lovni tahrirlashga ruxsat yo'q!"}, status=403)
 
     if request.method == 'POST':
         form = TolovForm(request.POST, instance=tolov, initial={'chiqim': chiqim})
@@ -561,7 +562,11 @@ def update_payment(request, tolov_id):
             chiqim.save()
             cache.delete(f'notifications_chiqim_{chiqim.id}')
             update_notifications(chiqim)
-            return JsonResponse({'success': True, 'message': "Payment successfully updated!", 'reload': True})
+            return JsonResponse({
+                'success': True,
+                'message': "To'lov muvaffaqiyatli yangilandi!",
+                'reload': True
+            })
         else:
             errors = {field: [str(error) for error in errors] for field, errors in form.errors.items()}
             logger.warning(f'Payment update form errors: {errors}')
@@ -575,7 +580,7 @@ def delete_payment(request, tolov_id):
     tolov = get_object_or_404(TolovTuri, id=tolov_id)
     chiqim = tolov.chiqim
     if not request.user.is_superuser and (chiqim.truck.user != request.user or chiqim.xaridor.user != request.user):
-        return JsonResponse({'success': False, 'error': "You do not have permission to delete this payment!"}, status=403)
+        return JsonResponse({'success': False, 'error': "Sizga bu to'lovni o'chirishga ruxsat yo'q!"}, status=403)
 
     if request.method == 'POST':
         tolov.delete()
@@ -583,7 +588,11 @@ def delete_payment(request, tolov_id):
         chiqim.save()
         cache.delete(f'notifications_chiqim_{chiqim.id}')
         update_notifications(chiqim)
-        return JsonResponse({'success': True, 'message': "Payment successfully deleted!", 'reload': True})
+        return JsonResponse({
+            'success': True,
+            'message': "To'lov muvaffaqiyatli o'chirildi!",
+            'reload': True
+        })
     else:
         return render(request, 'chiqim/tolov_delete_form.html', {'tolov': tolov, 'chiqim': chiqim})
 
@@ -643,7 +652,7 @@ def bildirisnoma_list(request):
 
     for bildirishnoma in bildirisnomalar:
         setattr(bildirishnoma, 'custom_days_left', bildirishnoma.days_left)
-        setattr(bildirishnoma, 'abs_days_left', bildirishnoma.days_overdue)  # Use days_overdue instead of abs_days_left
+        setattr(bildirishnoma, 'abs_days_left', bildirishnoma.days_overdue)
 
     paginator = Paginator(bildirisnomalar, 10)
     try:
@@ -809,7 +818,7 @@ def sms_history(request, bildirishnoma_id):
     if sms_logs.exists():
         html += "<ul>"
         for log in sms_logs:
-            bildirishnoma_date = log.bildirishnoma.tolov_sana.strftime('%Y-%m-%d') if log.bildirishnoma else 'Noma’lum'
+            bildirishnoma_date = log.bildirishnoma.tolov_sana.strftime('%Y-%m-%d') if log.bildirishnoma else 'Noma\'lum'
             html += (
                 f"<li><strong>{log.sent_at.strftime('%Y-%m-%d %H:%M:%S')} "
                 f"({log.get_status_display()} - To'lov sanasi: {bildirishnoma_date}):</strong><br>{log.message}</li>"

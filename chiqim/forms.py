@@ -55,7 +55,7 @@ class ChiqimForm(forms.ModelForm):
                     old_truck.save()
                     chiqim.truck.sotilgan = True
                     chiqim.truck.save()
-                chiqim.save()  # Let the model's save method handle calculations
+                chiqim.save()
         return chiqim
 
     def clean(self):
@@ -67,11 +67,11 @@ class ChiqimForm(forms.ModelForm):
         user = self.initial.get('user')
 
         if narx and boshlangich_summa > narx:
-            raise forms.ValidationError("The initial payment amount cannot exceed the price!")
+            raise forms.ValidationError("Boshlang'ich to'lov summasi narxdan oshib ketmasligi kerak!")
         if truck and truck.sotilgan and (not self.initial_instance or truck != self.initial_instance.truck):
-            raise forms.ValidationError("This vehicle has already been sold!")
+            raise forms.ValidationError("Bu transport vositasi allaqachon sotilgan!")
         if user and not user.is_superuser and xaridor and xaridor.user != user:
-            raise forms.ValidationError("This customer does not belong to you!")
+            raise forms.ValidationError("Bu xaridor sizga tegishli emas!")
         return cleaned_data
 
 class BoshlangichTolovForm(forms.ModelForm):
@@ -106,9 +106,9 @@ class BoshlangichTolovForm(forms.ModelForm):
         chiqim = self.initial.get('chiqim')
         if chiqim and summa:
             boshlangich_qoldiq = chiqim.get_boshlangich_qoldiq()
-            if summa > boshlangich_qoldiq:  # Fixed validation logic
+            if summa > boshlangich_qoldiq:
                 raise forms.ValidationError(
-                    f"The payment amount cannot exceed the remaining initial balance (${boshlangich_qoldiq:,.2f})!"
+                    f"To'lov summasi boshlang'ich qoldiq summasidan (${boshlangich_qoldiq:,.2f}) oshib ketdi!"
                 )
         return cleaned_data
 
@@ -143,9 +143,15 @@ class TolovForm(forms.ModelForm):
         summa = cleaned_data.get('summa')
         chiqim = self.initial.get('chiqim')
         if chiqim and summa:
-            remaining_balance = chiqim.qoldiq_summa - chiqim.boshlangich_summa
+            # Check if the remaining debt is zero or negative
+            if chiqim.qoldiq_summa <= 0:
+                raise forms.ValidationError(
+                    "Qoldiq summa to'langan, qo'shimcha to'lov qilish mumkin emas!"
+                )
+            # Check if the payment amount exceeds the remaining balance
+            remaining_balance = chiqim.qoldiq_summa
             if summa > remaining_balance:
                 raise forms.ValidationError(
-                    f"The payment amount cannot exceed the remaining monthly balance (${remaining_balance:,.2f})!"
+                    f"To'lov summasi qoldiq balansdan (${remaining_balance:,.2f}) oshib ketdi!"
                 )
         return cleaned_data
